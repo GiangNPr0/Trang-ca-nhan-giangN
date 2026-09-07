@@ -134,7 +134,6 @@
     <div class="absolute top-0 left-0 right-0 h-10 pointer-events-none"></div>
   </div>
 </div>
-
   <!-- Cụm 2 Facebook Reels nằm song song ngang -->
 <div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
   <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
@@ -230,14 +229,35 @@
 </div>
 
 <script>
-  function openModal(imgSrc) {
-    document.getElementById('modalImg').src = imgSrc;
-    document.getElementById('imageModal').classList.remove('hidden');
+  // Quản lý Lightbox và phím tắt (ESC, Mũi tên trái/phải)
+function openModal(imgSrc) {
+  document.getElementById('modalImg').src = imgSrc;
+  document.getElementById('imageModal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('imageModal').classList.add('hidden');
+}
+
+// Lắng nghe sự kiện bàn phím
+document.addEventListener('keydown', function(event) {
+  const modal = document.getElementById('imageModal');
+  // Nếu modal đang ẩn thì không làm gì cả
+  if (!modal || modal.classList.contains('hidden')) return;
+
+  if (event.key === 'Escape') {
+    closeModal();
+  } 
+  else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    // Tự động tìm và bấm nút chuyển ảnh tiếp theo (nếu có trên giao diện)
+    const nextBtn = document.querySelector('.next-image, [data-next], .carousel-next');
+    if (nextBtn) nextBtn.click();
+  } 
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    // Tự động tìm và bấm nút lùi về ảnh trước (nếu có trên giao diện)
+    const prevBtn = document.querySelector('.prev-image, [data-prev], .carousel-prev');
+    if (prevBtn) prevBtn.click();
   }
-  function closeModal() {
-    document.getElementById('imageModal').classList.add('hidden');
-  }
-</script>
-    
+});
   </body> <!-- Thẻ đóng body chuyển xuống đây là chuẩn nhất -->
 </html>
