@@ -17,7 +17,7 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        background: '#f9fafb', // Màu nền sáng, nhẹ nhàng
+                        background: '#f9fafb',
                         surface: '#ffffff',
                         primary: '#111827',
                         text_muted: '#6b7280',
@@ -28,7 +28,6 @@
         }
     </script>
     <style>
-        /* Hiệu ứng fade in nhẹ nhàng khi load trang */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -47,16 +46,15 @@
         
         <!-- SECTION 1: Header / Profile -->
         <header class="text-center">
-            <div onclick="openModal(this.querySelector('img').src)" class="relative inline-block mb-4 cursor-pointer">
-  <!-- Mắt tui nè -->
-  <img src="image/1.jpg"
-     alt="Giang Nguyễn"
-     class="w-32 h-32 md:w-36 md:h-36 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
-  <!-- Icon verified (tùy chọn) -->
-  <div class="absolute bottom-1 right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white">
-    <i class="ph-fill ph-check-circle text-xl"></i>
-  </div>
-</div>
+            <div onclick="openModal('image/1.jpg')" class="relative inline-block mb-4 cursor-pointer">
+              <!-- Mắt tui nè -->
+              <img src="image/1.jpg"
+                   alt="Giang Nguyễn"
+                   class="w-32 h-32 md:w-36 md:h-36 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
+              <!-- Icon verified -->
+              <div class="absolute bottom-1 right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white">
+                <i class="ph-fill ph-check-circle text-xl"></i>
+              </div>
             </div>
             
             <h1 class="text-3xl font-bold tracking-tight mb-2">Giang Nguyễn</h1>
@@ -66,119 +64,108 @@
             </p>
         </header>
 
-        <!-- SECTION 2: Social Links (Phong cách Linktree) -->
+        <!-- SECTION 2: Social Links -->
         <section class="opacity-0 animate-fade-in delay-100">
-  <div class="flex flex-col gap-3">
-    <!-- Nút Link 1: Facebook -->
-    <a href="https://facebook.com/n.giang62" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-          <i class="ph ph-facebook-logo text-2xl"></i>
-        </div>
-        <span class="font-semibold text-gray-800">Facebook nhó</span>
-      </div>
-      <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
-    </a>
+          <div class="flex flex-col gap-3">
+            <a href="https://facebook.com/n.giang62" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <i class="ph ph-facebook-logo text-2xl"></i>
+                </div>
+                <span class="font-semibold text-gray-800">Facebook nhó</span>
+              </div>
+              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
 
-    <!-- Nút Link 2: TikTok -->
-    <a href="https://www.tiktok.com/@gianghesloo" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-black group-hover:text-white transition-colors">
-          <i class="ph ph-tiktok-logo text-2xl"></i>
-        </div>
-        <span class="font-semibold text-gray-800">Kênh TikTok của Giang hes loo</span>
-      </div>
-      <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
-    </a>
+            <a href="https://www.tiktok.com/@gianghesloo" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-black group-hover:text-white transition-colors">
+                  <i class="ph ph-tiktok-logo text-2xl"></i>
+                </div>
+                <span class="font-semibold text-gray-800">Kênh TikTok của Giang hes loo</span>
+              </div>
+              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
 
-    <!-- Nút Link 3: GitHub -->
-    <a href="#" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 group-hover:bg-gray-800 group-hover:text-white transition-colors">
-          <i class="ph ph-github-logo text-2xl"></i>
-        </div>
-        <span class="font-semibold text-gray-800">Dự án trên GitHub (chưa có gì cả huhu)</span>
-      </div>
-      <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
-    </a>
+            <a href="#" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 group-hover:bg-gray-800 group-hover:text-white transition-colors">
+                  <i class="ph ph-github-logo text-2xl"></i>
+                </div>
+                <span class="font-semibold text-gray-800">Dự án trên GitHub (chưa có gì cả huhu)</span>
+              </div>
+              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
 
-    <!-- Nút Link 4: Email -->
-    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=n.giang06022000@gmail.com" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-  <div class="flex items-center gap-4">
-    <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
-      <i class="ph ph-envelope-simple text-2xl"></i>
-    </div>
-    <span class="font-semibold text-gray-800">Liên hệ qua Email này nhỏ</span>
-  </div>
-  <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
-</a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=n.giang06022000@gmail.com" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                  <i class="ph ph-envelope-simple text-2xl"></i>
+                </div>
+                <span class="font-semibold text-gray-800">Liên hệ qua Email này nhỏ</span>
+              </div>
+              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+            </a>
+          </div>
+        </section>
 
-        <!-- SECTION 3: Dự án cá nhân (2 Facebook Reels & Google Drive) -->
-<section class="space-y-6 pt-4">
-  <h2 class="flex items-center gap-2 font-bold text-xl text-gray-900">
-    <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
-  </h2>
+        <!-- SECTION 3: Dự án cá nhân -->
+        <section class="space-y-6 pt-4">
+          <h2 class="flex items-center gap-2 font-bold text-xl text-gray-900">
+            <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
+          </h2>
 
-  <!-- 1. Google Drive Video (16:9) -->
-<div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-  <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
-    <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
-  </h3>
-  <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-inner">
-    <iframe 
-      src="https://drive.google.com/file/d/1fwzCFsvYOWTBH3TEECgvHsK9_6mvY5qV/preview" 
-      class="absolute top-0 left-0 w-full h-full border-0" 
-      allow="autoplay" 
-      allowfullscreen>
-    </iframe>
-    <div class="absolute top-0 left-0 right-0 h-10 pointer-events-none"></div>
-  </div>
-</div>
-  <!-- Cụm 2 Facebook Reels nằm song song ngang -->
-<div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-  <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
-    <span class="w-2 h-2 rounded-full bg-blue-600"></span> Chụp kỷ yếu của a Giang Hé Lô
-  </h3>
+          <div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
+            </h3>
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-inner">
+              <iframe 
+                src="https://drive.google.com/file/d/1fwzCFsvYOWTBH3TEECgvHsK9_6mvY5qV/preview" 
+                class="absolute top-0 left-0 w-full h-full border-0" 
+                allow="autoplay" 
+                allowfullscreen>
+              </iframe>
+            </div>
+          </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <!-- Reel 1 -->
-    <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
-         data-href="https://www.facebook.com/reel/1629472991402120" 
-         data-width="auto" 
-         data-show-text="false">
-    </div>
-
-    <!-- Reel 2 -->
-    <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
-         data-href="https://www.facebook.com/reel/900070975937038" 
-         data-width="auto" 
-         data-show-text="false">
-    </div>
-  </div>
-</div>
-</section>
+          <div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span> Chụp kỷ yếu của a Giang Hé Lô
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
+                   data-href="https://www.facebook.com/reel/1629472991402120" 
+                   data-width="auto" 
+                   data-show-text="false">
+              </div>
+              <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
+                   data-href="https://www.facebook.com/reel/900070975937038" 
+                   data-width="auto" 
+                   data-show-text="false">
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- SECTION 4: Photo Gallery -->
         <section class="opacity-0 animate-fade-in delay-300">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                 <i class="ph-fill ph-camera text-accent"></i> Meme Chúa
             </h2>
-            <!-- Lưới ảnh 2 cột trên mọi thiết bị -->
-           <!-- Lưới ảnh 2 cột trên mọi thiết bị -->
-<div class="grid grid-cols-2 gap-3 sm:gap-4">
-    <div onclick="openModal(this.querySelector('img').src)" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-        <img src="image/2.jpg" alt="Ảnh cá nhân 1" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-    </div>
-    <div onclick="openModal(this.querySelector('img').src)" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-        <img src="image/3.jpg" alt="Ảnh cá nhân 2" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-    </div>
-    <div onclick="openModal(this.querySelector('img').src)" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-        <img src="image/4.jpg" alt="Ảnh cá nhân 3" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-    </div>
-    <div onclick="openModal(this.querySelector('img').src)" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-        <img src="image/5.jpg" alt="Ảnh cá nhân 4" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-    </div>
-</div>
+            <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                <div onclick="openModal('image/2.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
+                    <img src="image/2.jpg" alt="Ảnh cá nhân 1" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
+                </div>
+                <div onclick="openModal('image/3.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
+                    <img src="image/3.jpg" alt="Ảnh cá nhân 2" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
+                </div>
+                <div onclick="openModal('image/4.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
+                    <img src="image/4.jpg" alt="Ảnh cá nhân 3" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
+                </div>
+                <div onclick="openModal('image/5.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
+                    <img src="image/5.jpg" alt="Ảnh cá nhân 4" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
+                </div>
             </div>
         </section>
 
@@ -192,10 +179,9 @@
     </main>
 
     <script>
-        // Cập nhật năm hiện tại cho footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
     </script>
-<!-- Các đoạn script xử lý video -->
+
     <div id="fb-root"></div>
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
     <script>
@@ -218,46 +204,51 @@
         videos.forEach(video => observer.observe(video));
       });
     </script>
+
     <!-- Khung phóng to ảnh (Lightbox) -->
-<div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center hidden p-4 cursor-pointer">
-  <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
-    <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl">
-    <button onclick="closeModal()" class="absolute -top-3 -right-3 text-white bg-black/70 hover:bg-black rounded-full p-2 shadow-lg">
-      <i class="ph ph-x text-xl"></i>
-    </button>
-  </div>
-</div>
+    <div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center hidden p-4 cursor-pointer">
+      <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
+        <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl">
+        <button onclick="closeModal()" class="absolute -top-3 -right-3 text-white bg-black/70 hover:bg-black rounded-full p-2 shadow-lg">
+          <i class="ph ph-x text-xl"></i>
+        </button>
+      </div>
+    </div>
 
-<script>
-  // Quản lý Lightbox và phím tắt (ESC, Mũi tên trái/phải)
-function openModal(imgSrc) {
-  document.getElementById('modalImg').src = imgSrc;
-  document.getElementById('imageModal').classList.remove('hidden');
-}
+    <script>
+      // Danh sách toàn bộ các ảnh trên trang web để hỗ trợ chuyển qua lại
+      const galleryImages = ['image/1.jpg', 'image/2.jpg', 'image/3.jpg', 'image/4.jpg', 'image/5.jpg'];
+      let currentIndex = 0;
 
-function closeModal() {
-  document.getElementById('imageModal').classList.add('hidden');
-}
+      function openModal(imgSrc) {
+        currentIndex = galleryImages.indexOf(imgSrc);
+        if (currentIndex === -1) currentIndex = 0;
+        
+        document.getElementById('modalImg').src = galleryImages[currentIndex];
+        document.getElementById('imageModal').classList.remove('hidden');
+      }
 
-// Lắng nghe sự kiện bàn phím
-document.addEventListener('keydown', function(event) {
-  const modal = document.getElementById('imageModal');
-  // Nếu modal đang ẩn thì không làm gì cả
-  if (!modal || modal.classList.contains('hidden')) return;
+      function closeModal() {
+        document.getElementById('imageModal').classList.add('hidden');
+      }
 
-  if (event.key === 'Escape') {
-    closeModal();
-  } 
-  else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-    // Tự động tìm và bấm nút chuyển ảnh tiếp theo (nếu có trên giao diện)
-    const nextBtn = document.querySelector('.next-image, [data-next], .carousel-next');
-    if (nextBtn) nextBtn.click();
-  } 
-  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-    // Tự động tìm và bấm nút lùi về ảnh trước (nếu có trên giao diện)
-    const prevBtn = document.querySelector('.prev-image, [data-prev], .carousel-prev');
-    if (prevBtn) prevBtn.click();
-  }
-});
-  </body> <!-- Thẻ đóng body chuyển xuống đây là chuẩn nhất -->
+      // Xử lý phím tắt ESC, Mũi tên trái/phải
+      document.addEventListener('keydown', function(event) {
+        const modal = document.getElementById('imageModal');
+        if (!modal || modal.classList.contains('hidden')) return;
+
+        if (event.key === 'Escape') {
+          closeModal();
+        } 
+        else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          currentIndex = (currentIndex + 1) % galleryImages.length;
+          document.getElementById('modalImg').src = galleryImages[currentIndex];
+        } 
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
+          document.getElementById('modalImg').src = galleryImages[currentIndex];
+        }
+      });
+    </script>
+</body>
 </html>
