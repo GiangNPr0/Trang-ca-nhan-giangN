@@ -435,18 +435,49 @@ function previewImageFile(file) {
       return;
   }
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-      if (typeof e.target.result !== 'string') return;
-      selectedImageBase64 = e.target.result;
-      document.getElementById('imagePreview').src = selectedImageBase64;
-      document.getElementById('imagePreviewContainer').classList.remove('hidden');
-      document.getElementById('imageLabelText').innerText = 'Đổi ảnh';
+  if (label) label.innerText = 'Đang nén ảnh...';
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDimension = 1200;
+      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const readCompressedImage = quality => {
+          canvas.toBlob(blob => {
+              if (!blob) {
+                  if (label) label.innerText = 'Không nén được ảnh';
+                  return;
+              }
+              if (blob.size > 80 * 1024 && quality > 0.45) {
+                  readCompressedImage(quality - 0.1);
+                  return;
+              }
+              const reader = new FileReader();
+              reader.onload = event => {
+                  if (typeof event.target.result !== 'string') return;
+                  selectedImageBase64 = event.target.result;
+                  document.getElementById('imagePreview').src = selectedImageBase64;
+                  document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                  document.getElementById('imageLabelText').innerText = 'Đổi ảnh';
+              };
+              reader.onerror = () => {
+                  if (label) label.innerText = 'Không đọc được ảnh';
+              };
+              reader.readAsDataURL(blob);
+          }, 'image/jpeg', quality);
+      };
+      readCompressedImage(0.75);
   };
-  reader.onerror = function() {
+  image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
       if (label) label.innerText = 'Không đọc được ảnh';
   };
-  reader.readAsDataURL(file);
+  image.src = objectUrl;
 }
 
 function handleImageDrop(event) {
@@ -552,14 +583,19 @@ function setupImageDropZone() {
     time: timeStr 
 });
 
-// Xóa ảnh đã chọn sau khi đưa vào mảng
+          // Giới hạn payload để JSONBin không từ chối bản ghi quá lớn.
+          const payload = JSON.stringify(currentMessages);
+          if (new Blob([payload]).size > 90 * 1024) {
+              throw new Error('Dữ liệu quá lớn. Hãy dùng ảnh nhỏ hơn hoặc xóa bớt lời nhắn cũ.');
+          }
+
 return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
               method: 'PUT',
               headers: {
                   'Content-Type': 'application/json',
                   'X-Master-Key': JSONBIN_API_KEY
               },
-              body: JSON.stringify(currentMessages)
+              body: payload
           });
       })
       .then(res => {
@@ -573,7 +609,7 @@ return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
           removeSelectedImage();
       })
       .catch(err => {
-          alert("Gửi lời nhắn thất bại! Vui lòng kiểm tra lại kết nối.");
+          alert(`Gửi lời nhắn thất bại: ${err.message}`);
           console.error(err);
       })
       .finally(() => {
