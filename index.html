@@ -691,16 +691,16 @@
 
 <!-- Modal 2: Lightbox Phóng to ảnh -->
 <div id="imageModal" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4">
-    <button type="button" onclick="closeModal()" class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg z-25 cursor-pointer" aria-label="Đóng ảnh">
+    <button type="button" onclick="closeModal()" class="absolute top-4 right-4 z-[80] text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg cursor-pointer" aria-label="Đóng ảnh">
         <i class="ph ph-x text-2xl"></i>
     </button>
-    <button type="button" onclick="prevImage(event)" class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh trước">
+    <button type="button" onclick="prevImage(event)" class="absolute left-4 top-1/2 -translate-y-1/2 z-[80] text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh trước">
         <i class="ph ph-caret-left text-3xl"></i>
     </button>
-    <div class="relative max-w-4xl max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
-        <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl transition-all">
+    <div class="relative z-10 max-w-4xl max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
+        <img id="modalImg" src="" class="relative z-10 max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl transition-all">
     </div>
-    <button type="button" onclick="nextImage(event)" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh tiếp theo">
+    <button type="button" onclick="nextImage(event)" class="absolute right-4 top-1/2 -translate-y-1/2 z-[80] text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh tiếp theo">
         <i class="ph ph-caret-right text-3xl"></i>
     </button>
 </div>
@@ -1017,7 +1017,6 @@ function setupDonateQrEffect() {
     `).join('');
 
       listEl.querySelectorAll('[data-message-image]').forEach(image => {
-          image.addEventListener('click', () => openLightbox(image.dataset.messageImage));
           const showPreview = () => {
               document.querySelector('.message-photo-preview')?.remove();
               const preview = document.createElement('img');
@@ -1230,6 +1229,7 @@ function setupDonateQrEffect() {
 
   // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể (hoặc từ lời nhắn)
   function openLightbox(imgSrc) {
+    document.querySelector('.message-photo-preview')?.remove();
     currentIndex = allGalleryImages.indexOf(imgSrc);
     
     const modalImg = document.getElementById('modalImg');
@@ -1239,6 +1239,7 @@ function setupDonateQrEffect() {
     if(imgModal) {
         imgModal.classList.add('flex');
         imgModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
   }
 
@@ -1248,6 +1249,7 @@ function setupDonateQrEffect() {
     if(imgModal) {
         imgModal.classList.add('hidden');
         imgModal.classList.remove('flex');
+        document.body.style.overflow = '';
     }
   }
 
