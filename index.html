@@ -458,14 +458,14 @@
         <section id="albumSection" class="space-y-3 opacity-0 animate-fade-in delay-300">
           <div onclick="openBtsAlbumModal()" class="album-pop-card group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-visible flex items-center gap-4">
             <div class="album-pop-stack relative w-40 h-24 shrink-0">
-              <img src="image/bts/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 3">
-              <img src="image/bts/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 2">
-              <img src="image/bts/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Ảnh hậu trường">
+              <img data-album-cover="bts" data-cover-index="2" src="image/bts/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 3">
+              <img data-album-cover="bts" data-cover-index="1" src="image/bts/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 2">
+              <img data-album-cover="bts" data-cover-index="0" src="image/bts/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Ảnh hậu trường">
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
                 <h2 class="font-bold text-base text-gray-900 group-hover:text-amber-600 transition-colors">Hậu trường</h2>
-                <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
+                <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-1 rounded-full" aria-label="Số lượng ảnh hậu trường">0 ảnh</span>
               </div>
               <p class="text-xs text-gray-500 mt-1">Những khoảnh khắc phía sau mỗi khung hình.</p>
               <span class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">Xem album <i class="ph ph-arrow-right"></i></span>
@@ -474,14 +474,14 @@
 
           <div onclick="openAlbumModal()" class="album-pop-card group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-visible flex items-center gap-4">
             <div class="album-pop-stack relative w-40 h-24 shrink-0">
-              <img src="image/albummeme/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 3">
-              <img src="image/albummeme/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 2">
-              <img src="image/albummeme/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Album meme">
+              <img data-album-cover="albummeme" data-cover-index="2" src="image/albummeme/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 3">
+              <img data-album-cover="albummeme" data-cover-index="1" src="image/albummeme/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 2">
+              <img data-album-cover="albummeme" data-cover-index="0" src="image/albummeme/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Album meme">
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
                 <h2 class="font-bold text-base text-gray-900 group-hover:text-blue-600 transition-colors">Album meme</h2>
-                <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
+                <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-full" aria-label="Số lượng ảnh meme">0 ảnh</span>
               </div>
               <p class="text-xs text-gray-500 mt-1">Kho ảnh dìm và những kỷ niệm đáng nhớ.</p>
               <span class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">Xem album <i class="ph ph-arrow-right"></i></span>
@@ -706,8 +706,8 @@
 </div>
 
 <script>
-  const totalMemeImages = 4;
-  const totalBtsImages = 4;
+  let totalMemeImages = 0;
+  let totalBtsImages = 0;
   
   // Cấu hình JSONBin.io của bạn
   const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
@@ -715,18 +715,64 @@
   let galleryStore = { messages: [], ratings: {} };
 
   let allGalleryImages = [];
-
-  for (let i = 1; i <= totalBtsImages; i++) {
-      allGalleryImages.push(`image/bts/1 (${i}).jpg`);
-  }
-  for (let i = 1; i <= totalMemeImages; i++) {
-      allGalleryImages.push(`image/albummeme/1 (${i}).jpg`);
-  }
+  let albumImages = { bts: [], albummeme: [] };
 let currentIndex = 0;
 let activeAlbumImages = [];
 let activeAlbumLabel = 'Ảnh meme';
+const fallbackAlbumImages = {
+    bts: Array.from({ length: 4 }, (_, index) => `image/bts/1 (${index + 1}).jpg`),
+    albummeme: Array.from({ length: 4 }, (_, index) => `image/albummeme/1 (${index + 1}).jpg`)
+};
 
 let selectedImageBase64 = null;
+
+function setAlbumImages(albums) {
+    albumImages = {
+        bts: Array.isArray(albums.bts) ? albums.bts : fallbackAlbumImages.bts,
+        albummeme: Array.isArray(albums.albummeme) ? albums.albummeme : fallbackAlbumImages.albummeme
+    };
+    totalBtsImages = albumImages.bts.length;
+    totalMemeImages = albumImages.albummeme.length;
+    allGalleryImages = [...albumImages.bts, ...albumImages.albummeme];
+
+    document.querySelectorAll('[data-album-cover]').forEach(image => {
+        const images = albumImages[image.dataset.albumCover];
+        const source = images?.[Number.parseInt(image.dataset.coverIndex, 10)];
+        if (source) image.src = source;
+        image.onerror = () => { image.style.visibility = 'hidden'; };
+    });
+    updateAlbumCountBadges();
+}
+
+function updateAlbumCountBadges() {
+    const badges = [
+        ['btsCountBadge', totalBtsImages],
+        ['photoCountBadge', totalMemeImages]
+    ];
+    badges.forEach(([id, count]) => {
+        const badge = document.getElementById(id);
+        if (!badge) return;
+        const label = `${count} ảnh`;
+        badge.innerText = label;
+        badge.setAttribute('aria-label', `Số lượng: ${label}`);
+    });
+}
+
+async function loadAlbumImages() {
+    if (allGalleryImages.length === 0) setAlbumImages(fallbackAlbumImages);
+    if (window.location.protocol === 'file:') return;
+    const response = await fetch('/api/albums', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Album API failed: ${response.status}`);
+    const albums = await response.json();
+    setAlbumImages(albums);
+    const albumModal = document.getElementById('albumModal');
+    if (albumModal && !albumModal.classList.contains('hidden')) {
+        activeAlbumImages = activeAlbumLabel === 'Ảnh hậu trường'
+            ? albumImages.bts
+            : albumImages.albummeme;
+        renderAlbumItems(activeAlbumImages, activeAlbumLabel);
+    }
+}
 
 function previewSelectedImage(input) {
     if (input.files && input.files[0]) {
@@ -1177,10 +1223,7 @@ function setupDonateQrEffect() {
     const titleEl = document.getElementById('albumModalTitle');
     if(titleEl) titleEl.innerText = "Album Meme của Giang";
 
-    let memeList = [];
-    for (let i = 1; i <= totalMemeImages; i++) {
-        memeList.push(`image/albummeme/1 (${i}).jpg`);
-    }
+    const memeList = albumImages.albummeme;
 
     activeAlbumImages = memeList;
     activeAlbumLabel = 'Ảnh meme';
@@ -1199,10 +1242,7 @@ function setupDonateQrEffect() {
     const titleEl = document.getElementById('albumModalTitle');
     if (titleEl) titleEl.innerText = 'Album Hậu trường';
 
-    const btsList = [];
-    for (let i = 1; i <= totalBtsImages; i++) {
-        btsList.push(`image/bts/1 (${i}).jpg`);
-    }
+    const btsList = albumImages.bts;
 
     activeAlbumImages = btsList;
     activeAlbumLabel = 'Ảnh hậu trường';
@@ -1284,6 +1324,16 @@ function setupDonateQrEffect() {
   // Tự động cập nhật số lượng ảnh hiển thị lên badge và render danh sách thiết bị khi tải trang xong
   document.addEventListener("DOMContentLoaded", function() {
     setupThemeToggle();
+    loadAlbumImages().catch(error => {
+        console.error('Không thể đồng bộ ảnh album:', error);
+    });
+    if (window.location.protocol !== 'file:') {
+        window.setInterval(() => {
+            loadAlbumImages().catch(error => {
+                console.error('Không thể cập nhật ảnh album:', error);
+            });
+        }, 30000);
+    }
     setupImageDropZone();
     setupDonateQrEffect();
     setupAvatarPopup();
@@ -1298,11 +1348,7 @@ function setupDonateQrEffect() {
         }
     }
 
-    // Cập nhật số lượng ảnh badge
-    const memeBadge = document.getElementById("photoCountBadge");
-    if (memeBadge && typeof totalMemeImages !== 'undefined') {
-        memeBadge.innerText = totalMemeImages + " ảnh";
-    }
+    updateAlbumCountBadges();
     // Cập nhật lượt truy cập theo từng trình duyệt.
     let visits = Number.parseInt(localStorage.getItem('giang_visit_count'), 10);
     if (!Number.isFinite(visits)) visits = 1428;
