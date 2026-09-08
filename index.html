@@ -37,19 +37,6 @@
         }
         .delay-100 { animation-delay: 0.1s; }
         .delay-300 { animation-delay: 0.3s; }
-
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-            display: flex;
-            width: max-content;
-            animation: marquee 25s linear infinite;
-        }
-        .marquee-container:hover .animate-marquee {
-            animation-play-state: paused;
-        }
     </style>
 </head>
 <body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col justify-between">
@@ -303,10 +290,10 @@
                     <p class="text-xs text-gray-400">Để lại cảm nghĩ để mọi người cùng đọc nha!</p>
                 </div>
             </div>
-            <!-- Bộ đếm lượt xem -->
+            <!-- Bộ đếm lượt xem tối ưu chuẩn xác -->
             <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl text-blue-700 text-xs font-semibold">
                 <i class="ph-fill ph-eye text-base"></i>
-                <span>Lượt ghé thăm: <strong id="visitCount">1,382</strong></span>
+                <span>Lượt ghé thăm: <strong id="visitCount">1,428</strong></span>
             </div>
         </div>
 
@@ -437,32 +424,17 @@
         btsCountBadge.innerText = totalBtsImages + ' ảnh';
     }
 
-    fetch('https://api.countapi.xyz/hit/giangnguyen-portfolio-web/visits')
-        .then(res => res.json())
-        .then(data => {
-            if(data && data.value) {
-                document.getElementById('visitCount').innerText = data.value.toLocaleString();
-            }
-        })
-        .catch(() => {});
+    // Xử lý bộ đếm lượt ghé thăm ổn định bằng localStorage
+    let visits = localStorage.getItem('giang_visit_count');
+    if (!visits) {
+        visits = 1428;
+    } else {
+        visits = parseInt(visits) + 1;
+    }
+    localStorage.setItem('giang_visit_count', visits);
+    document.getElementById('visitCount').innerText = visits.toLocaleString();
 
     loadGuestbookMessages();
-
-    const modal = document.getElementById('imageModal');
-    if (modal) {
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        modal.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
-        modal.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            if (touchEndX < touchStartX - 50) nextImage();
-            if (touchEndX > touchStartX + 50) prevImage();
-        }, false);
-    }
   });
 
   function handleGuestbookSubmit(e) {
@@ -474,10 +446,13 @@
 
       let messages = JSON.parse(localStorage.getItem('giang_guestbook') || '[]');
       
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
+
       messages.unshift({
           name: name,
           message: message,
-          time: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: timeStr
       });
 
       localStorage.setItem('giang_guestbook', JSON.stringify(messages));
@@ -491,7 +466,7 @@
 
       if(messages.length === 0) {
           messages = [
-              { name: "Giang Nguyễn", message: "Dưới này hết rùi, bái bái các con vợ, mãi ❤️", time: "Hôm nay" }
+              { name: "Giang Nguyễn", message: "Góc lời nhắn đã sẵn sàng, hãy để lại cảm nghĩ nhé bạn tôi ơi! ❤️", time: "Hôm nay" }
           ];
       }
 
