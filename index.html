@@ -188,34 +188,36 @@
             </h2>
             
             <div onclick="openAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5 overflow-visible">
-                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 z-30">
-                    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:rotate-[38deg] group-hover:translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
-                        <img src="image/albummeme/1 (5).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-                    </div>
-                    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:rotate-[20deg] group-hover:translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
-                        <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-                    </div>
-                    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform -rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-right z-3">
-                        <img src="image/albummeme/1 (3).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-                    </div>
-                    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform -rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-right z-4">
-                        <img src="image/albummeme/1 (2).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-                    </div>
-                   <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-xl border-2 border-white bg-gray-100 group-hover:scale-105 transition-transform duration-300 z-10">
-    <img src="image/albummeme/1 (1).jpg" class="w-full h-full object-cover">
-</div>
+    <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 z-30">
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
+            <img src="image/albummeme/1 (5).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
+            <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-right z-3">
+            <img src="image/albummeme/1 (3).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-4">
+            <img src="image/albummeme/1 (2).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-xl border-2 border-white bg-gray-100 group-hover:scale-105 transition-transform duration-300 z-10">
+            <img src="image/albummeme/1 (1).jpg" class="w-full h-full object-cover">
+        </div>
+    </div>
 
-                <div class="flex-1 z-10">
-                    <div class="flex items-center justify-between mb-1">
-                        <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Bộ sưu tập Meme</h3>
-                        <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">0 ảnh</span>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-3">Nhấn để khám phá toàn bộ kho ảnh dìm và kỷ niệm.</p>
-                    <div class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
-                        <span>Xem tất cả</span>
-                        <i class="ph ph-arrow-right"></i>
-                    </div>
-                </div>
+    <div class="flex-1 z-10">
+        <div class="flex items-center justify-between mb-1">
+            <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Bộ sưu tập Meme</h3>
+            <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">4 ảnh</span>
+        </div>
+        <p class="text-sm text-gray-500 mb-3">Nhấn để khám phá toàn bộ kho ảnh dìm và kỷ niệm.</p>
+        <div class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
+            <span>Xem tất cả</span>
+            <i class="ph ph-arrow-right"></i>
+        </div>
+    </div>
+</div>
             </div>
         </section>
     </div>
@@ -538,11 +540,12 @@
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
 
+  // Mở modal chứa lưới ảnh của Album Meme
   function openAlbumModal() {
     const gridList = document.getElementById('albumGridList');
     const titleEl = document.getElementById('albumModalTitle');
     if(titleEl) titleEl.innerText = "Album Meme của Giang";
-    
+
     let memeList = [];
     for (let i = 1; i <= totalMemeImages; i++) {
         memeList.push(`image/albummeme/1 (${i}).jpg`);
@@ -556,7 +559,7 @@
             </div>
         `).join('');
     }
-    
+
     const modal = document.getElementById('albumModal');
     if(modal) {
         modal.classList.add('flex');
@@ -564,11 +567,12 @@
     }
   }
 
+  // Mở modal chứa lưới ảnh của Khoảnh khắc đi cày (BTS)
   function openBtsAlbumModal() {
     const gridList = document.getElementById('albumGridList');
     const titleEl = document.getElementById('albumModalTitle');
-    if(titleEl) titleEl.innerText = "Khoảnh khắc đi cày (BTS)";
-    
+    if(titleEl) titleEl.innerText = "Khoảnh khắc đi cày";
+
     let btsList = [];
     for (let i = 1; i <= totalBtsImages; i++) {
         btsList.push(`image/bts/1 (${i}).jpg`);
@@ -582,7 +586,7 @@
             </div>
         `).join('');
     }
-    
+
     const modal = document.getElementById('albumModal');
     if(modal) {
         modal.classList.add('flex');
@@ -590,6 +594,7 @@
     }
   }
 
+  // Đóng modal lưới album ảnh
   function closeAlbumModal() {
     const modal = document.getElementById('albumModal');
     if(modal) {
@@ -598,6 +603,7 @@
     }
   }
 
+  // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể
   function openLightbox(imgSrc) {
     currentIndex = allGalleryImages.indexOf(imgSrc);
     if (currentIndex === -1) currentIndex = 0;
@@ -612,6 +618,7 @@
     }
   }
 
+  // Đóng cửa sổ phóng to ảnh Lightbox
   function closeModal() {
     const imgModal = document.getElementById('imageModal');
     if(imgModal) {
@@ -620,6 +627,7 @@
     }
   }
 
+  // Chuyển sang ảnh kế tiếp trong Lightbox
   function nextImage(event) {
     if (event) event.stopPropagation();
     currentIndex = (currentIndex + 1) % allGalleryImages.length;
@@ -627,6 +635,7 @@
     if(modalImg) modalImg.src = allGalleryImages[currentIndex];
   }
 
+  // Quay lại ảnh trước đó trong Lightbox
   function prevImage(event) {
     if (event) event.stopPropagation();
     currentIndex = (currentIndex - 1 + allGalleryImages.length) % allGalleryImages.length;
@@ -634,6 +643,7 @@
     if(modalImg) modalImg.src = allGalleryImages[currentIndex];
   }
 
+  // Lắng nghe phím tắt bàn phím khi xem ảnh phóng to
   document.addEventListener('keydown', function(event) {
     const modal = document.getElementById('imageModal');
     if (!modal || modal.classList.contains('hidden')) return;
@@ -641,6 +651,18 @@
     if (event.key === 'Escape') closeModal();
     else if (event.key === 'ArrowRight') nextImage();
     else if (event.key === 'ArrowLeft') prevImage();
+  });
+
+  // Tự động cập nhật số lượng ảnh hiển thị lên badge khi tải trang xong
+  document.addEventListener("DOMContentLoaded", function() {
+    const memeBadge = document.getElementById("photoCountBadge");
+    if (memeBadge && typeof totalMemeImages !== 'undefined') {
+        memeBadge.innerText = totalMemeImages + " ảnh";
+    }
+    const btsBadge = document.getElementById("btsCountBadge");
+    if (btsBadge && typeof totalBtsImages !== 'undefined') {
+        btsBadge.innerText = totalBtsImages + " ảnh";
+    }
   });
 </script>
 </body>
