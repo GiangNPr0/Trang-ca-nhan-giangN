@@ -131,6 +131,12 @@
         .video-frame {
             transition: filter 0.3s ease;
         }
+        .fb-video iframe {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100%;
+            border: 0;
+        }
         .video-preview-card:hover .video-frame,
         .video-preview-card:focus-within .video-frame {
             filter: brightness(1.05);
@@ -243,7 +249,8 @@
                 border-radius: 0.625rem;
             }
             .video-preview-card .grid.grid-cols-2 {
-                gap: 0.5rem;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 0.75rem;
             }
             .video-preview-card .fb-video {
                 min-width: 0;
