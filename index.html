@@ -314,11 +314,11 @@
         <input type="text" id="guestMsg" placeholder="Viết lời yêu thương..." required
             class="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 bg-gray-50/50">
         
-        <!-- Nút chọn ảnh và khung xem trước -->
-        <div class="flex items-center gap-2">
+        <!-- Nút chọn ảnh, vùng kéo-thả và khung xem trước -->
+        <div id="imageDropZone" class="flex items-center gap-2 rounded-lg border border-dashed border-transparent transition-colors" tabindex="0" role="button" aria-label="Chọn hoặc kéo thả ảnh">
             <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="previewSelectedImage(this)">
             <label for="imageInput" class="cursor-pointer text-gray-500 hover:text-blue-600 flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 rounded-lg transition-colors">
-                <i class="ph ph-image text-sm"></i> <span id="imageLabelText">Thêm ảnh</span>
+                <i class="ph ph-image text-sm"></i> <span id="imageLabelText">Thêm ảnh hoặc kéo thả</span>
             </label>
             <div id="imagePreviewContainer" class="hidden relative w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
                 <img id="imagePreview" class="w-full h-full object-cover">
@@ -420,22 +420,77 @@ let selectedImageBase64 = null;
 
 function previewSelectedImage(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedImageBase64 = e.target.result;
-            document.getElementById('imagePreview').src = selectedImageBase64;
-            document.getElementById('imagePreviewContainer').classList.remove('hidden');
-            document.getElementById('imageLabelText').innerText = 'Đổi ảnh';
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
+      previewImageFile(input.files[0]);
+  }
+}
+
+function previewImageFile(file) {
+  const label = document.getElementById('imageLabelText');
+  if (!file.type.startsWith('image/')) {
+      if (label) label.innerText = 'Vui lòng chọn file ảnh';
+      return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+      if (label) label.innerText = 'Ảnh tối đa 5MB';
+      return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+      if (typeof e.target.result !== 'string') return;
+      selectedImageBase64 = e.target.result;
+      document.getElementById('imagePreview').src = selectedImageBase64;
+      document.getElementById('imagePreviewContainer').classList.remove('hidden');
+      document.getElementById('imageLabelText').innerText = 'Đổi ảnh';
+  };
+  reader.onerror = function() {
+      if (label) label.innerText = 'Không đọc được ảnh';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImageDrop(event) {
+  event.preventDefault();
+  const dropZone = document.getElementById('imageDropZone');
+  if (dropZone) dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+  const file = event.dataTransfer && event.dataTransfer.files[0];
+  if (!file) return;
+
+  const input = document.getElementById('imageInput');
+  if (input && typeof DataTransfer !== 'undefined') {
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+  }
+  previewImageFile(file);
 }
 
 function removeSelectedImage() {
-    selectedImageBase64 = null;
-    document.getElementById('imageInput').value = '';
-    document.getElementById('imagePreviewContainer').classList.add('hidden');
-    document.getElementById('imageLabelText').innerText = 'Thêm ảnh';
+  selectedImageBase64 = null;
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imagePreviewContainer').classList.add('hidden');
+  document.getElementById('imageLabelText').innerText = 'Thêm ảnh hoặc kéo thả';
+}
+
+function setupImageDropZone() {
+  const dropZone = document.getElementById('imageDropZone');
+  if (!dropZone) return;
+  dropZone.addEventListener('dragover', event => {
+      event.preventDefault();
+      dropZone.classList.add('border-blue-400', 'bg-blue-50');
+  });
+  dropZone.addEventListener('dragleave', event => {
+      if (!dropZone.contains(event.relatedTarget)) {
+          dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+      }
+  });
+  dropZone.addEventListener('drop', handleImageDrop);
+  dropZone.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          document.getElementById('imageInput').click();
+      }
+  });
 }
   // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
 
@@ -689,6 +744,8 @@ return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
 
   // Tự động cập nhật số lượng ảnh hiển thị lên badge và render danh sách thiết bị khi tải trang xong
   document.addEventListener("DOMContentLoaded", function() {
+    setupImageDropZone();
+
     // 1. Render danh sách thiết bị
     const gearlistEl = document.getElementById('gearlist');
     if (gearlistEl && typeof gearData !== 'undefined') {
