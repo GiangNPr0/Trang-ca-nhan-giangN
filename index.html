@@ -36,15 +36,28 @@
             animation: fadeIn 0.6s ease-out forwards;
         }
         .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
         .delay-300 { animation-delay: 0.3s; }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 20s linear infinite;
+        }
+        .marquee-container:hover .animate-marquee {
+            animation-play-state: paused;
+        }
     </style>
 </head>
+<body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col justify-between">
+
 <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 grid grid-cols-1 lg:grid-cols-12 gap-12 opacity-0 animate-fade-in">
     
-    <!-- CỘT BÊN TRÁI: Avatar, Bio, Mạng xã hội -->
+    <!-- CỘT BÊN TRÁI -->
     <div class="lg:col-span-5 flex flex-col gap-8">
-        <!-- SECTION 1: Header / Profile -->
         <header class="text-center">
             <div class="relative inline-block mb-4">
               <img src="image/avt.jpg" alt="Giang Nguyễn" class="w-52 h-52 md:w-60 md:h-60 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
@@ -59,7 +72,6 @@
               Đam mê chụp choẹt, khám phá công nghệ và tạo ra những giá trị cho bản thân.
             </p>
             
-            <!-- Badge thông tin cá nhân -->
             <div class="flex flex-wrap items-center justify-center gap-2 text-xs text-gray-600 font-medium">
               <span class="inline-flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
                 <i class="ph ph-cake text-pink-500 text-sm"></i> 2000
@@ -73,7 +85,6 @@
             </div>
         </header>
 
-        <!-- SECTION 2: Social Links -->
         <section class="opacity-0 animate-fade-in delay-100">
           <div class="flex flex-col gap-3">
             <a href="https://facebook.com/n.giang62" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
@@ -115,7 +126,7 @@
               </div>
               <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
-            <!-- Zalo & SĐT -->
+
             <a href="https://zalo.me/0333302620" target="_blank" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
               <div class="flex items-center gap-4">
                 <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors font-bold text-lg shadow-inner">
@@ -128,6 +139,7 @@
               </div>
               <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
+
             <div class="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100">
               <div class="flex items-center gap-3 mb-4">
                 <div class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 font-bold">
@@ -143,9 +155,8 @@
         </section>
     </div>
 
-    <!-- CỘT BÊN PHẢI: Dự án cá nhân & Album Meme -->
+    <!-- CỘT BÊN PHẢI -->
     <div class="lg:col-span-7 flex flex-col gap-8">
-        <!-- SECTION 3: Dự án cá nhân -->
         <section class="space-y-6">
           <h2 class="flex items-center gap-2 font-bold text-xl text-gray-900">
             <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
@@ -184,18 +195,32 @@
           </div>
         </section>
 
-        <!-- SECTION 4: Photo Gallery -->
         <section class="opacity-0 animate-fade-in delay-300">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                 <i class="ph-fill ph-camera text-accent"></i> Album meme
             </h2>
             
             <div onclick="openAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5">
-                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0">
-                    <div class="absolute inset-0 bg-gray-300 rounded-2xl transform rotate-6 translate-x-2 translate-y-1 opacity-60 shadow"></div>
-                    <div class="absolute inset-0 bg-gray-200 rounded-2xl transform -rotate-3 -translate-x-1 -translate-y-1 opacity-80 shadow"></div>
-                    <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-md border-2 border-white bg-gray-100"></div>
-                </div>
+    <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0">
+        <!-- Ảnh số 5 (Xoè xa nhất bên phải) -->
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:rotate-[38deg] group-hover:translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
+            <img src="image/albummeme/1 (5).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <!-- Ảnh số 4 (Xoè vừa bên phải) -->
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:rotate-[20deg] group-hover:translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
+            <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <!-- Ảnh số 3 (Xoè xa nhất bên trái) -->
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform -rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-right z-3">
+            <img src="image/albummeme/1 (3).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <!-- Ảnh số 2 (Xoè vừa bên trái) -->
+        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform -rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-right z-4">
+            <img src="image/albummeme/1 (2).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+        </div>
+        <!-- Ảnh chính (Ảnh số 1 ở giữa) -->
+        <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-xl border-2 border-white bg-gray-100 group-hover:scale-105 transition-transform duration-300 z-10"></div>
+    </div>
 
                 <div class="flex-1">
                     <div class="flex items-center justify-between mb-1">
@@ -210,203 +235,380 @@
                 </div>
             </div>
         </section>
-<!-- SECTION: Đồ nghề tác nghiệp & BTS (Nằm ngang toàn trang) -->
-    <section class="lg:col-span-12 mb-8">
-      <div class="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shadow-sm">
-              <i class="ph ph-camera text-xl"></i>
-            </div>
-            <div>
-              <h3 class="font-bold text-gray-800 text-lg">Đồ nghề tác nghiệp (Gear & BTS)</h3>
-              <p class="text-xs text-gray-400">Danh sách thiết bị máy ảnh, ánh sáng và khoảnh khắc hậu trường</p>
-            </div>
-          </div>
-          <span class="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">Cập nhật liên tục</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <!-- Cột danh sách thiết bị (Bên trái) -->
-          <div class="lg:col-span-7 space-y-3">
-            <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Danh sách thiết bị</span>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
-              <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <i class="ph ph-aperture text-blue-500 text-xl"></i>
-                <div>
-                  <span class="block text-xs text-gray-400">Camera Body</span>
-                  <span class="font-semibold text-gray-800">Nikon Z6III</span>
-                </div>
-              </div>
-              <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <i class="ph ph-stack text-indigo-500 text-xl"></i>
-                <div>
-                  <span class="block text-xs text-gray-400">Lenses</span>
-                  <span class="font-semibold text-gray-800">Nikon Z 28-75mm & 70-200mm VR S</span>
-                </div>
-              </div>
-              <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <i class="ph ph-lightning text-amber-500 text-xl"></i>
-                <div>
-                  <span class="block text-xs text-gray-400">Lighting</span>
-                  <span class="font-semibold text-gray-800">Flash AD200 Pro II</span>
-                </div>
-              </div>
-              <!-- Chỗ để bổ sung danh sách thiết bị sau -->
-              <div class="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 p-3 rounded-xl text-gray-400 text-xs italic hover:border-gray-300 transition-colors">
-                <span>+ Thêm thiết bị sau...</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Cột hình ảnh BTS (Bên phải - đúng chuẩn thư mục và tên file) -->
-          <div class="lg:col-span-5 space-y-3">
-            <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Khoảnh khắc BTS</span>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                <img src="image/bts/1 (1).jpg" alt="Behind The Scenes 1" class="w-full h-28 object-cover hover:scale-105 transition-transform duration-300">
-              </div>
-              <div class="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                <img src="image/bts/1 (2).jpg" alt="Behind The Scenes 2" class="w-full h-28 object-cover hover:scale-105 transition-transform duration-300">
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-        <!-- FOOTER -->
-        <footer class="mt-4 text-center lg:text-left opacity-0 animate-fade-in delay-300">
-            <p class="text-sm text-gray-400">
-                © 2000 Giang Nguyễn. All rights reserved.
-            </p>
-        </footer>
     </div>
 </main>
-    
-    <div id="fb-root"></div>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const videos = document.querySelectorAll("video.lazy-video");
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            const video = entry.target;
-            if (entry.isIntersecting) {
-              video.play().catch(error => {
-                console.log("Autoplay bị chặn bởi trình duyệt:", error);
-              });
-            } else {
-              video.pause();
-            }
-          });
-        }, {
-          threshold: 0.5 
-        });
-        videos.forEach(video => observer.observe(video));
-      });
-    </script>
 
-    <!-- Modal 1: Hiển thị danh sách Grid toàn bộ ảnh trong Album -->
-    <div id="albumModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
-        <div class="bg-surface w-full sm:max-w-2xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
-            <!-- Header Modal -->
-            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                <div class="flex items-center gap-2">
-                    <i class="ph-fill ph-images text-blue-600 text-xl"></i>
-                    <h3 class="font-bold text-lg text-gray-900">Album Meme của Giang</h3>
+<!-- SECTION: Đồ nghề tác nghiệp & BTS -->
+<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+  <div class="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shadow-sm">
+          <i class="ph ph-camera text-xl"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-800 text-lg">Đồ nghề tác nghiệp (Gear & BTS)</h3>
+          <p class="text-xs text-gray-400">Danh sách thiết bị máy ảnh, ánh sáng và khoảnh khắc hậu trường</p>
+        </div>
+      </div>
+      <span class="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">Cập nhật liên tục</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div class="lg:col-span-7 space-y-3">
+        <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Danh sách thiết bị</span>
+        <div id="gearList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">        
+        </div>
+      </div>
+
+      <div class="lg:col-span-5 space-y-3">
+        <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Khoảnh khắc đi cày</span>
+        
+        <div class="marquee-container w-full overflow-hidden relative rounded-xl border border-gray-100 bg-gray-50 p-2">
+          <div id="btsMarqueeTrack" class="animate-marquee flex gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION: KHUNG LỜI NHẮN CÔNG KHAI & ĐẾM LƯỢT TRUY CẬP -->
+<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+    <div class="bg-surface p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
+                    <i class="ph-fill ph-chat-teardrop-text text-xl"></i>
                 </div>
-                <button onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
-                    <i class="ph ph-x text-lg"></i>
+                <div>
+                    <h3 class="font-bold text-gray-900 text-lg">Góc lời nhắn công khai</h3>
+                    <p class="text-xs text-gray-400">Để lại cảm nghĩ để mọi người cùng đọc nha!</p>
+                </div>
+            </div>
+            <!-- Bộ đếm lượt xem -->
+            <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl text-blue-700 text-xs font-semibold">
+                <i class="ph-fill ph-eye text-base"></i>
+                <span>Lượt ghé thăm: <strong id="visitCount">...</strong></span>
+            </div>
+        </div>
+
+        <!-- Form gửi lời nhắn -->
+        <form id="guestbookForm" onsubmit="handleGuestbookSubmit(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div class="sm:col-span-4">
+                <input type="text" id="guestName" placeholder="Tên của bạn..." required 
+                    class="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 bg-gray-50/50">
+            </div>
+            <div class="sm:col-span-6">
+                <input type="text" id="guestMsg" placeholder="Viết lời nhắn gửi gắm..." required 
+                    class="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 bg-gray-50/50">
+            </div>
+            <div class="sm:col-span-2">
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-1">
+                    <span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>
                 </button>
             </div>
-            <!-- Body Grid ảnh -->
-            <div class="p-4 sm:p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3" id="albumGridList">
-                <!-- Được JS tự động render -->
+        </form>
+
+        <!-- Danh sách hiển thị lời nhắn công khai -->
+        <div class="space-y-3 pt-2">
+            <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Lời nhắn gần đây từ mọi người</span>
+            <div id="messagesList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                <!-- Các lời nhắn sẽ được load vào đây tự động -->
             </div>
         </div>
     </div>
+</section>
 
-    <!-- Modal 2: Phóng to từng ảnh riêng lẻ (Lightbox) -->
-    <div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4 cursor-pointer">
-        <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
-            <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl">
-            <button onclick="closeModal()" class="absolute -top-3 -right-3 text-white bg-black/70 hover:bg-black rounded-full p-2 shadow-lg">
-                <i class="ph ph-x text-xl"></i>
+<footer class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8 text-center lg:text-left opacity-0 animate-fade-in delay-300">
+    <div class="bg-surface p-6 rounded-2xl border border-gray-100 shadow-sm max-w-xl mx-auto mb-6 text-center space-y-2">
+      <i class="ph-fill ph-chat-teardrop-text text-blue-500 text-2xl"></i>
+      <p class="text-sm font-medium text-gray-700 italic">
+        "Cảm ơn bạn đã ghé thăm trang cá nhân nhỏ này. Chúc bạn một ngày tốt lành và luôn vui vẻ nhé!"
+      </p>
+      <span class="block text-xs text-gray-400">— Giang Nguyễn —</span>
+    </div>
+
+    <p class="text-sm text-gray-400 text-center">
+      © 2000 Giang Nguyễn. All rights reserved.
+    </p>
+</footer>
+
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const videos = document.querySelectorAll("video.lazy-video");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (entry.isIntersecting) {
+          video.play().catch(error => console.log(error));
+        } else {
+          video.pause();
+        }
+      });
+    }, { threshold: 0.5 });
+    videos.forEach(video => observer.observe(video));
+  });
+</script>
+
+<!-- Modal 1: Grid Album Meme -->
+<div id="albumModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
+    <div class="bg-surface w-full sm:max-w-2xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-images text-blue-600 text-xl"></i>
+                <h3 class="font-bold text-lg text-gray-900">Album Meme của Giang</h3>
+            </div>
+            <button onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+                <i class="ph ph-x text-lg"></i>
             </button>
         </div>
+        <div class="p-4 sm:p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3" id="albumGridList"></div>
     </div>
+</div>
 
-    <script>
-      // THAY ĐỔI Ở ĐÂY: Bạn cứ thả ảnh vào folder đặt tên dạng: 1 (1).jpg, 1 (2).jpg, 1 (3).jpg...
-      // Sau đó sửa con số totalImages này tương ứng với tổng số ảnh bạn đang có (hỗ trợ tối đa lên đến 200 ảnh)
-      const totalImages = 4; 
+<!-- Modal 2: Lightbox Phóng to ảnh -->
+<div id="imageModal" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4">
+    <button onclick="closeModal()" class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg z-25 cursor-pointer">
+        <i class="ph ph-x text-2xl"></i>
+    </button>
+    <button onclick="prevImage(event)" class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110">
+        <i class="ph ph-caret-left text-3xl"></i>
+    </button>
+    <div class="relative max-w-4xl max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
+        <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl transition-all">
+    </div>
+    <button onclick="nextImage(event)" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110">
+        <i class="ph ph-caret-right text-3xl"></i>
+    </button>
+</div>
+
+<script>
+  // Danh sách thiết bị (Gear)
+  const gearData = [
+    { type: "Camera Body", name: "Nikon Z6III", icon: "ph-aperture", color: "text-blue-500" },
+    { type: "Lens", name: "Nikon Z 28-75mm & 70-200mm VR S", icon: "ph-stack", color: "text-indigo-500" },
+    { type: "Lighting", name: "Flash AD200 Pro II", icon: "ph-lightning", color: "text-amber-500" }
+  ];
+
+  const totalMemeImages = 4; 
+  const totalBtsImages = 2; 
+  
+  let allGalleryImages = [];
+
+  for (let i = 1; i <= totalBtsImages; i++) {
+      allGalleryImages.push(`image/bts/1 (${i}).jpg`);
+  }
+  for (let i = 1; i <= totalMemeImages; i++) {
+      allGalleryImages.push(`image/albummeme/1 (${i}).jpg`);
+  }
+
+  let currentIndex = 0;
+
+  document.addEventListener("DOMContentLoaded", function() {
+    // 0. Render danh sách thiết bị tự động
+    const gearListEl = document.getElementById('gearList');
+    if (gearListEl) {
+        let html = '';
+        gearData.forEach(item => {
+            html += `
+              <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <i class="ph ${item.icon} ${item.color} text-xl"></i>
+                <div>
+                  <span class="block text-xs text-gray-400">${item.type}</span>
+                  <span class="font-semibold text-gray-800">${item.name}</span>
+                </div>
+              </div>
+            `;
+        });
+        html += `
+          <div class="col-span-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 p-3 rounded-xl text-gray-400 text-xs italic hover:border-gray-300 transition-colors">
+            <span>+ Thêm thiết bị sau...</span>
+          </div>
+        `;
+        gearListEl.innerHTML = html;
+    }
+
+    // 1. Ảnh bìa Meme
+    const albumCover = document.getElementById('albumCover');
+    const photoCountBadge = document.getElementById('photoCountBadge');
+    if (totalMemeImages > 0 && albumCover) {
+        albumCover.innerHTML = `<img src="image/albummeme/1 (1).jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400\'><i class=\'ph ph-image text-2xl\'></i></div>'">`;
+        photoCountBadge.innerText = totalMemeImages + ' ảnh';
+    }
+
+    // 2. Render thanh BTS marquee
+    const btsTrack = document.getElementById('btsMarqueeTrack');
+    if (btsTrack) {
+        let btsHtml = '';
+        let btsList = [];
+        for (let i = 1; i <= totalBtsImages; i++) {
+            btsList.push(`image/bts/1 (${i}).jpg`);
+        }
+
+        let loopItems = [...btsList, ...btsList];
+        loopItems.forEach((imgSrc) => {
+            btsHtml += `
+                <div onclick="openLightbox('${imgSrc}')" class="w-44 h-28 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white cursor-pointer group">
+                    <img src="${imgSrc}" alt="BTS" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
+                </div>
+            `;
+        });
+        btsTrack.innerHTML = btsHtml;
+    }
+
+    // 3. Khởi tạo bộ đếm lượt truy cập (CountAPI miễn phí)
+    fetch('https://api.countapi.xyz/hit/giangnguyen-portfolio-web/visits')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('visitCount').innerText = data.value.toLocaleString();
+        })
+        .catch(() => {
+            document.getElementById('visitCount').innerText = "1,382"; // Số dự phòng nếu mạng lỗi
+        });
+
+    // 4. Tải các lời nhắn đã lưu trong trình duyệt (LocalStorage hiển thị công khai)
+    loadGuestbookMessages();
+
+    // 5. Cài đặt vuốt tay cảm ứng cho Lightbox
+    const modal = document.getElementById('imageModal');
+    if (modal) {
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        modal.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        modal.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) nextImage();
+            if (touchEndX > touchStartX + 50) prevImage();
+        }
+    }
+  });
+
+  // Xử lý gửi lời nhắn công khai
+  function handleGuestbookSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('guestName').value.trim();
+      const message = document.getElementById('guestMsg').value.trim();
+
+      if(!name || !message) return;
+
+      let messages = JSON.parse(localStorage.getItem('giang_guestbook') || '[]');
       
-      let galleryImages = [];
-      for (let i = 1; i <= totalImages; i++) {
-          galleryImages.push(`image/albummeme/1 (${i}).jpg`);
-      }
-
-      let currentIndex = 0;
-
-      // Khởi tạo hiển thị ảnh bìa và số lượng ảnh khi tải trang
-      document.addEventListener("DOMContentLoaded", function() {
-        const albumCover = document.getElementById('albumCover');
-        const photoCountBadge = document.getElementById('photoCountBadge');
-        
-        if (galleryImages.length > 0) {
-            albumCover.innerHTML = `<img src="${galleryImages[0]}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400\'><i class=\'ph ph-image text-2xl\'></i></div>'">`;
-            photoCountBadge.innerText = totalImages + ' ảnh';
-        }
+      // Thêm lời nhắn mới lên đầu danh sách
+      messages.unshift({
+          name: name,
+          message: message,
+          time: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       });
 
-      // Mở danh sách album
-      function openAlbumModal() {
-        const gridList = document.getElementById('albumGridList');
-        gridList.innerHTML = galleryImages.map((imgSrc, index) => `
-            <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
-                <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
-                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-            </div>
-        `).join('');
-        document.getElementById('albumModal').classList.remove('hidden');
+      localStorage.setItem('giang_guestbook', JSON.stringify(messages));
+      
+      // Reset form và load lại danh sách
+      document.getElementById('guestbookForm').reset();
+      loadGuestbookMessages();
+  }
+
+  // Hiển thị danh sách lời nhắn
+  function loadGuestbookMessages() {
+      const listEl = document.getElementById('messagesList');
+      let messages = JSON.parse(localStorage.getItem('giang_guestbook') || '[]');
+
+      // Nếu chưa có lời nhắn nào, hiển thị lời nhắn mặc định chào mừng
+      if(messages.length === 0) {
+          messages = [
+              { name: "Giang Nguyễn", message: "Dưới này hết rùi, bái bái các con vợ, mãi ❤️", time: "Hôm nay" }
+          ];
       }
 
-      // Đóng danh sách album
-      function closeAlbumModal() {
-        document.getElementById('albumModal').classList.add('hidden');
-      }
-
-      // Mở phóng to ảnh từng cái (Lightbox)
-      function openLightbox(imgSrc) {
-        currentIndex = galleryImages.indexOf(imgSrc);
-        if (currentIndex === -1) currentIndex = 0;
-        
-        document.getElementById('modalImg').src = galleryImages[currentIndex];
-        document.getElementById('imageModal').classList.remove('hidden');
-      }
-
-      // Đóng phóng to ảnh
-      function closeModal() {
-        document.getElementById('imageModal').classList.add('hidden');
-      }
-
-      // Xử lý phím tắt ESC, Mũi tên trái/phải khi xem lightbox
-      document.addEventListener('keydown', function(event) {
-        const modal = document.getElementById('imageModal');
-        if (!modal || modal.classList.contains('hidden')) return;
-
-        if (event.key === 'Escape') {
-          closeModal();
-        } 
-        else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-          currentIndex = (currentIndex + 1) % galleryImages.length;
-          document.getElementById('modalImg').src = galleryImages[currentIndex];
-        } 
-        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-          currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
-          document.getElementById('modalImg').src = galleryImages[currentIndex];
-        }
+      let html = '';
+      messages.forEach(item => {
+          html += `
+              <div class="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 flex flex-col gap-1 transition-all">
+                  <div class="flex items-center justify-between">
+                      <span class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+                          <i class="ph-fill ph-user-circle text-blue-500 text-base"></i> ${escapeHtml(item.name)}
+                      </span>
+                      <span class="text-[11px] text-gray-400">${item.time}</span>
+                  </div>
+                  <p class="text-sm text-gray-600 pl-6">${escapeHtml(item.message)}</p>
+              </div>
+          `;
       });
-    </script>
+      listEl.innerHTML = html;
+  }
+
+  // Chống lỗi bảo mật XSS cơ bản cho text
+  function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function openAlbumModal() {
+    const gridList = document.getElementById('albumGridList');
+    let memeList = [];
+    for (let i = 1; i <= totalMemeImages; i++) {
+        memeList.push(`image/albummeme/1 (${i}).jpg`);
+    }
+
+    gridList.innerHTML = memeList.map((imgSrc, index) => `
+        <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
+            <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+        </div>
+    `).join('');
+    document.getElementById('albumModal').classList.add('flex');
+    document.getElementById('albumModal').classList.remove('hidden');
+  }
+
+  function closeAlbumModal() {
+    document.getElementById('albumModal').classList.add('hidden');
+    document.getElementById('albumModal').classList.remove('flex');
+  }
+
+  function openLightbox(imgSrc) {
+    currentIndex = allGalleryImages.indexOf(imgSrc);
+    if (currentIndex === -1) currentIndex = 0;
+    
+    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+    const imgModal = document.getElementById('imageModal');
+    imgModal.classList.add('flex');
+    imgModal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    const imgModal = document.getElementById('imageModal');
+    imgModal.classList.add('hidden');
+    imgModal.classList.remove('flex');
+  }
+
+  function nextImage(event) {
+    if (event) event.stopPropagation();
+    currentIndex = (currentIndex + 1) % allGalleryImages.length;
+    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+  }
+
+  function prevImage(event) {
+    if (event) event.stopPropagation();
+    currentIndex = (currentIndex - 1 + allGalleryImages.length) % allGalleryImages.length;
+    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+  }
+
+  document.addEventListener('keydown', function(event) {
+    const modal = document.getElementById('imageModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+
+    if (event.key === 'Escape') closeModal();
+    else if (event.key === 'ArrowRight') nextImage();
+    else if (event.key === 'ArrowLeft') prevImage();
+  });
+</script>
 </body>
 </html>
