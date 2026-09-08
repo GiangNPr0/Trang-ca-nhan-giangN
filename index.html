@@ -372,15 +372,19 @@
 </div>
 
 <script>
-  const totalMemeImages = 4; 
-  const totalBtsImages = 4; 
+  const totalMemeImages = 4;
+  const totalBtsImages = 4;
+  
+  // Cấu hình JSONBin.io của bạn
+  const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
+  const JSONBIN_API_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6'; 
 
   const gearData = [
     { type: "Camera Body", name: "Nikon Z6III", icon: "ph-aperture", color: "text-blue-500" },
     { type: "Lens", name: "Nikon Z 28-75mm & 70-200mm VR S", icon: "ph-stack", color: "text-indigo-500" },
     { type: "Lighting", name: "Flash AD200 Pro II", icon: "ph-lightning", color: "text-amber-500" }
   ];
-  
+
   let allGalleryImages = [];
 
   for (let i = 1; i <= totalBtsImages; i++) {
@@ -393,169 +397,238 @@
   let currentIndex = 0;
 
   document.addEventListener("DOMContentLoaded", function() {
-    const gearListEl = document.getElementById('gearList');
-    if (gearListEl) {
-        let html = '';
-        gearData.forEach(item => {
-            html += `
-              <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <i class="ph ${item.icon} ${item.color} text-xl"></i>
-                <div>
-                  <span class="block text-xs text-gray-400">${item.type}</span>
-                  <span class="font-semibold text-gray-800">${item.name}</span>
-                </div>
-              </div>
-            `;
-        });
-        gearListEl.innerHTML = html;
-    }
+      const gearListEl = document.getElementById('gearList');
+      if (gearListEl) {
+          let html = '';
+          gearData.forEach(item => {
+              html += `
+                  <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <i class="ph ${item.icon} ${item.color} text-xl"></i>
+                      <div>
+                          <span class="block text-xs text-gray-400">${item.type}</span>
+                          <span class="font-semibold text-sm text-gray-800">${item.name}</span>
+                      </div>
+                  </div>
+              `;
+          });
+          gearListEl.innerHTML = html;
+      }
 
-    const albumCover = document.getElementById('albumCover');
-    const photoCountBadge = document.getElementById('photoCountBadge');
-    if (totalMemeImages > 0 && albumCover) {
-        albumCover.innerHTML = `<img src="image/albummeme/1 (1).jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400\'><i class=\'ph ph-image text-2xl\'></i></div>'">`;
-        photoCountBadge.innerText = totalMemeImages + ' ảnh';
-    }
+      // Xử lý đếm lượt truy cập
+      let visits = localStorage.getItem('giang_visit_count');
+      if (!visits) {
+          visits = 1428;
+      } else {
+          visits = parseInt(visits) + 1;
+      }
+      localStorage.setItem('giang_visit_count', visits);
+      const visitEl = document.getElementById('visitCount');
+      if(visitEl) visitEl.innerText = visits.toLocaleString();
 
-    const btsCover = document.getElementById('btsCover');
-    const btsCountBadge = document.getElementById('btsCountBadge');
-    if (totalBtsImages > 0 && btsCover) {
-        btsCover.innerHTML = `<img src="image/bts/1 (1).jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400\'><i class=\'ph ph-image text-2xl\'></i></div>'">`;
-        btsCountBadge.innerText = totalBtsImages + ' ảnh';
-    }
-
-    // Xử lý bộ đếm lượt ghé thăm ổn định bằng localStorage
-    let visits = localStorage.getItem('giang_visit_count');
-    if (!visits) {
-        visits = 1428;
-    } else {
-        visits = parseInt(visits) + 1;
-    }
-    localStorage.setItem('giang_visit_count', visits);
-    document.getElementById('visitCount').innerText = visits.toLocaleString();
-
-    loadGuestbookMessages();
+      // Gọi hàm tải tin nhắn từ JSONBin khi vừa mở trang
+      fetchMessagesFromJSONBin();
   });
 
-  function handleGuestbookSubmit(e) {
-      e.preventDefault();
-      const name = document.getElementById('guestName').value.trim();
-      const message = document.getElementById('guestMsg').value.trim();
+  // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
 
-      if(!name || !message) return;
-
-      let messages = JSON.parse(localStorage.getItem('giang_guestbook') || '[]');
-      
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
-
-      messages.unshift({
-          name: name,
-          message: message,
-          time: timeStr
+  // 1. Tải danh sách lời nhắn
+  function fetchMessagesFromJSONBin() {
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_API_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+          const messages = data.record || [];
+          renderMessages(messages);
+      })
+      .catch(err => {
+          console.error("Lỗi tải tin nhắn:", err);
+          const listEl = document.getElementById('messagesList');
+          if(listEl) listEl.innerHTML = `<div class="text-xs text-red-500 p-3">Không tải được dữ liệu lời nhắn từ JSONBin!</div>`;
       });
-
-      localStorage.setItem('giang_guestbook', JSON.stringify(messages));
-      document.getElementById('guestbookForm').reset();
-      loadGuestbookMessages();
   }
 
-  function loadGuestbookMessages() {
-      const listEl = document.getElementById('messagesList');
-      let messages = JSON.parse(localStorage.getItem('giang_guestbook') || '[]');
+  // 2. Gửi lời nhắn mới
+  function handleGuestbookSubmit(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('guestName');
+      const msgInput = document.getElementById('guestMsg');
+      if(!nameInput || !msgInput) return;
 
-      if(messages.length === 0) {
-          messages = [
-              { name: "Giang Nguyễn", message: "Góc lời nhắn đã sẵn sàng, hãy để lại cảm nghĩ nhé bạn tôi ơi! ❤️", time: "Hôm nay" }
-          ];
+      const name = nameInput.value.trim();
+      const message = msgInput.value.trim();
+      if(!name || !message) return;
+
+      const submitBtn = document.getElementById('submitBtn');
+      if(submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span>Đang gửi...</span>`;
+      }
+
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_API_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+          let currentMessages = data.record || [];
+          if (!Array.isArray(currentMessages)) currentMessages = [];
+          
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
+
+          currentMessages.unshift({ name, message, time: timeStr });
+
+          return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-Master-Key': JSONBIN_API_KEY
+              },
+              body: JSON.stringify(currentMessages)
+          });
+      })
+      .then(res => res.json())
+      .then(data => {
+          renderMessages(data.record || []);
+          const form = document.getElementById('guestbookForm');
+          if(form) form.reset();
+      })
+      .catch(err => {
+          alert("Gửi lời nhắn thất bại! Vui lòng kiểm tra lại kết nối.");
+          console.error(err);
+      })
+      .finally(() => {
+          if(submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = `<span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>`;
+          }
+      });
+  }
+
+  // 3. Hiển thị danh sách lời nhắn ra giao diện
+  function renderMessages(messages) {
+      const listEl = document.getElementById('messagesList');
+      if(!listEl) return;
+
+      if(!messages || messages.length === 0) {
+          listEl.innerHTML = `<div class="text-xs text-gray-400 italic p-3">Chưa có lời nhắn nào cả. Hãy là người đầu tiên gửi nhé!</div>`;
+          return;
       }
 
       listEl.innerHTML = messages.map(item => `
-          <div class="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 flex flex-col gap-1 transition-all">
+          <div class="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 flex flex-col gap-1">
               <div class="flex items-center justify-between">
                   <span class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
-                      <i class="ph-fill ph-user-circle text-blue-500 text-base"></i> ${escapeHtml(item.name)}
+                      <i class="ph-fill ph-user-circle text-blue-500 text-base"></i> ${escapeHtml(item.name || 'Ẩn danh')}
                   </span>
-                  <span class="text-[11px] text-gray-400">${item.time}</span>
+                  <span class="text-[11px] text-gray-400">${escapeHtml(item.time || '')}</span>
               </div>
-              <p class="text-sm text-gray-600 pl-6">${escapeHtml(item.message)}</p>
+              <p class="text-sm text-gray-600 pl-6">${escapeHtml(item.message || '')}</p>
           </div>
       `).join('');
   }
 
   function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      if (!text) return '';
+      return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+
+  // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
 
   function openAlbumModal() {
     const gridList = document.getElementById('albumGridList');
-    document.getElementById('albumModalTitle').innerText = "Album Meme của Giang";
+    const titleEl = document.getElementById('albumModalTitle');
+    if(titleEl) titleEl.innerText = "Album Meme của Giang";
+    
     let memeList = [];
     for (let i = 1; i <= totalMemeImages; i++) {
         memeList.push(`image/albummeme/1 (${i}).jpg`);
     }
 
-    gridList.innerHTML = memeList.map((imgSrc, index) => `
-        <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
-            <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-        </div>
-    `).join('');
+    if(gridList) {
+        gridList.innerHTML = memeList.map((imgSrc, index) => `
+            <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
+                <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+            </div>
+        `).join('');
+    }
     
-    document.getElementById('albumModal').classList.add('flex');
-    document.getElementById('albumModal').classList.remove('hidden');
+    const modal = document.getElementById('albumModal');
+    if(modal) {
+        modal.classList.add('flex');
+        modal.classList.remove('hidden');
+    }
   }
 
   function openBtsAlbumModal() {
     const gridList = document.getElementById('albumGridList');
-    document.getElementById('albumModalTitle').innerText = "Khoảnh khắc đi cày";
+    const titleEl = document.getElementById('albumModalTitle');
+    if(titleEl) titleEl.innerText = "Khoảnh khắc đi cày (BTS)";
+    
     let btsList = [];
     for (let i = 1; i <= totalBtsImages; i++) {
         btsList.push(`image/bts/1 (${i}).jpg`);
     }
 
-    gridList.innerHTML = btsList.map((imgSrc, index) => `
-        <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
-            <img src="${imgSrc}" alt="Ảnh BTS ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-        </div>
-    `).join('');
+    if(gridList) {
+        gridList.innerHTML = btsList.map((imgSrc, index) => `
+            <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
+                <img src="${imgSrc}" alt="Ảnh BTS ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+            </div>
+        `).join('');
+    }
     
-    document.getElementById('albumModal').classList.add('flex');
-    document.getElementById('albumModal').classList.remove('hidden');
+    const modal = document.getElementById('albumModal');
+    if(modal) {
+        modal.classList.add('flex');
+        modal.classList.remove('hidden');
+    }
   }
 
   function closeAlbumModal() {
-    document.getElementById('albumModal').classList.add('hidden');
-    document.getElementById('albumModal').classList.remove('flex');
+    const modal = document.getElementById('albumModal');
+    if(modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
   }
 
   function openLightbox(imgSrc) {
     currentIndex = allGalleryImages.indexOf(imgSrc);
     if (currentIndex === -1) currentIndex = 0;
     
-    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+    const modalImg = document.getElementById('modalImg');
+    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
+    
     const imgModal = document.getElementById('imageModal');
-    imgModal.classList.add('flex');
-    imgModal.classList.remove('hidden');
+    if(imgModal) {
+        imgModal.classList.add('flex');
+        imgModal.classList.remove('hidden');
+    }
   }
 
   function closeModal() {
     const imgModal = document.getElementById('imageModal');
-    imgModal.classList.add('hidden');
-    imgModal.classList.remove('flex');
+    if(imgModal) {
+        imgModal.classList.add('hidden');
+        imgModal.classList.remove('flex');
+    }
   }
 
   function nextImage(event) {
     if (event) event.stopPropagation();
     currentIndex = (currentIndex + 1) % allGalleryImages.length;
-    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+    const modalImg = document.getElementById('modalImg');
+    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
   }
 
   function prevImage(event) {
     if (event) event.stopPropagation();
     currentIndex = (currentIndex - 1 + allGalleryImages.length) % allGalleryImages.length;
-    document.getElementById('modalImg').src = allGalleryImages[currentIndex];
+    const modalImg = document.getElementById('modalImg');
+    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
   }
 
   document.addEventListener('keydown', function(event) {
