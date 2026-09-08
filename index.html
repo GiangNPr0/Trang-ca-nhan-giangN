@@ -109,6 +109,7 @@
             transform: translate(-50%, 4px);
             pointer-events: none;
             transition: opacity 0.2s ease, transform 0.2s ease;
+            min-width: max-content;
         }
         .zalo-link:hover .zalo-phone-popup,
         .zalo-link:focus-visible .zalo-phone-popup {
@@ -175,6 +176,42 @@
             transform: translateY(-3px) scale(1.04);
             z-index: 3;
         }
+        .message-photo {
+            transform-origin: center;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        }
+        .message-photo:hover,
+        .message-photo:focus-visible {
+            position: relative;
+            z-index: 9999;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.3);
+            filter: saturate(1.08) contrast(1.04);
+        }
+        .message-photo-preview {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            z-index: 10000;
+            width: min(72vw, 310px);
+            max-height: 72vh;
+            object-fit: contain;
+            transform: translate(-50%, -50%) scale(0.92);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            border: 4px solid white;
+            border-radius: 1rem;
+            box-shadow: 0 22px 50px rgba(15, 23, 42, 0.4);
+            background: white;
+        }
+        .message-photo-preview.is-visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        #messagesList {
+            position: relative;
+            z-index: 50;
+        }
         .local-video-note {
             display: none;
         }
@@ -218,7 +255,7 @@
             </div>
         </header>
 
-        <section id="socialSection" class="opacity-0 animate-fade-in delay-100">
+        <section id="socialSection" class="relative z-40 opacity-0 animate-fade-in delay-100">
           <div class="grid grid-cols-5 gap-2">
             <a href="https://facebook.com/n.giang62" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="group flex items-center justify-center bg-surface p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
               <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -254,7 +291,7 @@
           </div>
         </section>
 
-        <section id="equipmentSection" class="opacity-0 animate-fade-in delay-150">
+        <section id="equipmentSection" class="relative z-10 opacity-0 animate-fade-in delay-150">
           <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm p-4">
             <h2 class="text-base font-bold text-gray-900 flex items-center gap-2 mb-3">
               <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center">
@@ -427,7 +464,7 @@
 </form>
 
         <!-- Danh sách hiển thị lời nhắn công khai -->
-        <div class="lg:col-span-3 space-y-3">
+        <div class="relative z-50 lg:col-span-3 space-y-3">
             <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Lời nhắn gần đây từ mọi người</span>
             <div id="messagesList" class="space-y-2 min-h-72 max-h-96 overflow-y-auto pr-1"></div>
         </div>
@@ -849,7 +886,7 @@ function setupDonateQrEffect() {
             <p class="text-sm text-gray-600 pl-6">${escapeHtml(item.message || '')}</p>
             ${isSafeImageSource(item.image) ? `
                 <div class="pl-6 mt-2">
-                    <img src="${escapeHtml(item.image)}" data-message-image="${escapeHtml(item.image)}" class="max-h-36 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-gray-200" alt="Ảnh đính kèm">
+                    <img src="${escapeHtml(item.image)}" data-message-image="${escapeHtml(item.image)}" tabindex="0" class="message-photo max-h-36 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-gray-200" alt="Ảnh đính kèm">
                     <button type="button" data-message-favorite-index="${index}" class="mt-2 text-xs ${hasFavorite(item.image) ? 'text-pink-600' : 'text-gray-500'}">
                         <i class="${hasFavorite(item.image) ? 'ph-fill' : 'ph'} ph-heart"></i>
                         ${getRating(item.image).favorites} ${hasFavorite(item.image) ? 'Bỏ yêu thích' : 'Yêu thích'}
@@ -861,6 +898,23 @@ function setupDonateQrEffect() {
 
       listEl.querySelectorAll('[data-message-image]').forEach(image => {
           image.addEventListener('click', () => openLightbox(image.dataset.messageImage));
+          const showPreview = () => {
+              document.querySelector('.message-photo-preview')?.remove();
+              const preview = document.createElement('img');
+              preview.src = image.dataset.messageImage;
+              preview.alt = 'Ảnh lời nhắn phóng to';
+              preview.className = 'message-photo-preview';
+              document.body.appendChild(preview);
+              requestAnimationFrame(() => preview.classList.add('is-visible'));
+          };
+          const hidePreview = () => {
+              const preview = document.querySelector('.message-photo-preview');
+              if (preview) preview.remove();
+          };
+          image.addEventListener('mouseenter', showPreview);
+          image.addEventListener('mouseleave', hidePreview);
+          image.addEventListener('focus', showPreview);
+          image.addEventListener('blur', hidePreview);
       });
       listEl.querySelectorAll('[data-message-favorite-index]').forEach(button => {
           const image = messages[Number.parseInt(button.dataset.messageFavoriteIndex, 10)]?.image;
