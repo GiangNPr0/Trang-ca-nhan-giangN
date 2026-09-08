@@ -154,10 +154,11 @@
               <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
             </h3>
             <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-inner">
-              <iframe 
+              <iframe
                 src="https://www.youtube.com/embed/9TKM7gEnvaQ" 
                 class="absolute top-0 left-0 w-full h-full border-0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                title="Video Hoa hậu sinh viên"
                 allowfullscreen>
               </iframe>
             </div>
@@ -190,7 +191,7 @@
             <div onclick="openAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5 overflow-visible">
     <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 z-30">
         <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
-            <img src="image/albummeme/1 (5).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+            <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" alt="Ảnh meme">
         </div>
         <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
             <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
@@ -242,7 +243,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <div class="lg:col-span-7 space-y-3">
         <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Danh sách thiết bị</span>
-        <div id="gearList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600"></div>
+        <div id="gearlist" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600"></div>
       </div>
 
       <!-- Khoảnh khắc đi cày -->
@@ -326,7 +327,7 @@
         </div>
     </div>
     <div class="sm:col-span-2">
-        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-1">
+        <button id="submitBtn" type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-1">
             <span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>
         </button>
     </div>
@@ -365,7 +366,7 @@
                 <i class="ph-fill ph-images text-blue-600 text-xl"></i>
                 <h3 id="albumModalTitle" class="font-bold text-lg text-gray-900">Bộ sưu tập ảnh</h3>
             </div>
-            <button onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+            <button type="button" onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors" aria-label="Đóng album">
                 <i class="ph ph-x text-lg"></i>
             </button>
         </div>
@@ -375,16 +376,16 @@
 
 <!-- Modal 2: Lightbox Phóng to ảnh -->
 <div id="imageModal" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4">
-    <button onclick="closeModal()" class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg z-25 cursor-pointer">
+    <button type="button" onclick="closeModal()" class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg z-25 cursor-pointer" aria-label="Đóng ảnh">
         <i class="ph ph-x text-2xl"></i>
     </button>
-    <button onclick="prevImage(event)" class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110">
+    <button type="button" onclick="prevImage(event)" class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh trước">
         <i class="ph ph-caret-left text-3xl"></i>
     </button>
     <div class="relative max-w-4xl max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
         <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl transition-all">
     </div>
-    <button onclick="nextImage(event)" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110">
+    <button type="button" onclick="nextImage(event)" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/80 rounded-full p-3 shadow-lg z-25 cursor-pointer transition-transform hover:scale-110" aria-label="Ảnh tiếp theo">
         <i class="ph ph-caret-right text-3xl"></i>
     </button>
 </div>
@@ -398,10 +399,10 @@
   const JSONBIN_API_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6'; 
 
   const gearData = [
-    { type: "Camera Body", name: "Nikon Z6III", icon: "ph-aperture", color: "text-blue-500" },
-    { type: "Lens", name: "Nikon Z 28-75mm & 70-200mm VR S", icon: "ph-stack", color: "text-indigo-500" },
-    { type: "Lighting", name: "Flash AD200 Pro II", icon: "ph-lightning", color: "text-amber-500" }
-  ];
+  { type: "Máy ảnh", name: "Tên máy ảnh của bạn", icon: "ph-aperture", color: "text-blue-500" },
+  { type: "Ống kính", name: "Tên ống kính của bạn", icon: "ph-stack", color: "text-indigo-500" },
+  { type: "Đèn", name: "Tên đèn của bạn", icon: "ph-lightning", color: "text-amber-500" }
+];
 
   let allGalleryImages = [];
 
@@ -434,38 +435,6 @@ function removeSelectedImage() {
     document.getElementById('imagePreviewContainer').classList.add('hidden');
     document.getElementById('imageLabelText').innerText = 'Thêm ảnh';
 }
-      const gearListEl = document.getElementById('gearList');
-      if (gearListEl) {
-          let html = '';
-          gearData.forEach(item => {
-              html += `
-                  <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <i class="ph ${item.icon} ${item.color} text-xl"></i>
-                      <div>
-                          <span class="block text-xs text-gray-400">${item.type}</span>
-                          <span class="font-semibold text-sm text-gray-800">${item.name}</span>
-                      </div>
-                  </div>
-              `;
-          });
-          gearListEl.innerHTML = html;
-      }
-
-      // Xử lý đếm lượt truy cập
-      let visits = localStorage.getItem('giang_visit_count');
-      if (!visits) {
-          visits = 1428;
-      } else {
-          visits = parseInt(visits) + 1;
-      }
-      localStorage.setItem('giang_visit_count', visits);
-      const visitEl = document.getElementById('visitCount');
-      if(visitEl) visitEl.innerText = visits.toLocaleString();
-
-      // Gọi hàm tải tin nhắn từ JSONBin khi vừa mở trang
-      fetchMessagesFromJSONBin();
-  });
-
   // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
 
   // 1. Tải danh sách lời nhắn
@@ -473,7 +442,10 @@ function removeSelectedImage() {
       fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
           headers: { 'X-Master-Key': JSONBIN_API_KEY }
       })
-      .then(res => res.json())
+      .then(res => {
+          if (!res.ok) throw new Error(`JSONBin GET failed: ${res.status}`);
+          return res.json();
+      })
       .then(data => {
           const messages = data.record || [];
           renderMessages(messages);
@@ -505,7 +477,10 @@ function removeSelectedImage() {
       fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
           headers: { 'X-Master-Key': JSONBIN_API_KEY }
       })
-      .then(res => res.json())
+      .then(res => {
+          if (!res.ok) throw new Error(`JSONBin GET failed: ${res.status}`);
+          return res.json();
+      })
       .then(data => {
           let currentMessages = data.record || [];
           if (!Array.isArray(currentMessages)) currentMessages = [];
@@ -521,9 +496,7 @@ function removeSelectedImage() {
 });
 
 // Xóa ảnh đã chọn sau khi đưa vào mảng
-removeSelectedImage();
-
-          return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
               method: 'PUT',
               headers: {
                   'Content-Type': 'application/json',
@@ -532,11 +505,15 @@ removeSelectedImage();
               body: JSON.stringify(currentMessages)
           });
       })
-      .then(res => res.json())
+      .then(res => {
+          if (!res.ok) throw new Error(`JSONBin PUT failed: ${res.status}`);
+          return res.json();
+      })
       .then(data => {
           renderMessages(data.record || []);
           const form = document.getElementById('guestbookForm');
           if(form) form.reset();
+          removeSelectedImage();
       })
       .catch(err => {
           alert("Gửi lời nhắn thất bại! Vui lòng kiểm tra lại kết nối.");
@@ -569,18 +546,27 @@ removeSelectedImage();
                 <span class="text-[11px] text-gray-400">${escapeHtml(item.time || '')}</span>
             </div>
             <p class="text-sm text-gray-600 pl-6">${escapeHtml(item.message || '')}</p>
-            ${item.image ? `
+            ${isSafeImageSource(item.image) ? `
                 <div class="pl-6 mt-2">
-                    <img src="${item.image}" onclick="openLightbox('${item.image}')" class="max-h-36 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-gray-200">
+                    <img src="${escapeHtml(item.image)}" data-message-image="${escapeHtml(item.image)}" class="max-h-36 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-gray-200" alt="Ảnh đính kèm">
                 </div>
             ` : ''}
         </div>
     `).join('');
+
+      listEl.querySelectorAll('[data-message-image]').forEach(image => {
+          image.addEventListener('click', () => openLightbox(image.dataset.messageImage));
+      });
   }
 
   function escapeHtml(text) {
       if (!text) return '';
       return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function isSafeImageSource(source) {
+      return typeof source === 'string' &&
+          /^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(source);
   }
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
@@ -648,13 +634,12 @@ removeSelectedImage();
     }
   }
 
-  // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể
+  // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể (hoặc từ lời nhắn)
   function openLightbox(imgSrc) {
     currentIndex = allGalleryImages.indexOf(imgSrc);
-    if (currentIndex === -1) currentIndex = 0;
     
     const modalImg = document.getElementById('modalImg');
-    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
+    if(modalImg) modalImg.src = currentIndex !== -1 ? allGalleryImages[currentIndex] : imgSrc;
     
     const imgModal = document.getElementById('imageModal');
     if(imgModal) {
@@ -675,6 +660,7 @@ removeSelectedImage();
   // Chuyển sang ảnh kế tiếp trong Lightbox
   function nextImage(event) {
     if (event) event.stopPropagation();
+    if (allGalleryImages.length === 0) return;
     currentIndex = (currentIndex + 1) % allGalleryImages.length;
     const modalImg = document.getElementById('modalImg');
     if(modalImg) modalImg.src = allGalleryImages[currentIndex];
@@ -683,6 +669,7 @@ removeSelectedImage();
   // Quay lại ảnh trước đó trong Lightbox
   function prevImage(event) {
     if (event) event.stopPropagation();
+    if (allGalleryImages.length === 0) return;
     currentIndex = (currentIndex - 1 + allGalleryImages.length) % allGalleryImages.length;
     const modalImg = document.getElementById('modalImg');
     if(modalImg) modalImg.src = allGalleryImages[currentIndex];
@@ -697,18 +684,28 @@ removeSelectedImage();
     else if (event.key === 'ArrowRight') nextImage();
     else if (event.key === 'ArrowLeft') prevImage();
   });
-// Mở Lightbox xem phóng to một ảnh từ lời nhắn
-function openLightbox(imgSrc) {
-    const modalImg = document.getElementById('modalImg');
-    const modal = document.getElementById('imageModal') || document.getElementById('albumModal');
-    if (modalImg) modalImg.src = imgSrc;
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-}
-  // Tự động cập nhật số lượng ảnh hiển thị lên badge khi tải trang xong
+
+  // Tự động cập nhật số lượng ảnh hiển thị lên badge và render danh sách thiết bị khi tải trang xong
   document.addEventListener("DOMContentLoaded", function() {
+    // 1. Render danh sách thiết bị
+    const gearlistEl = document.getElementById('gearlist');
+    if (gearlistEl && typeof gearData !== 'undefined') {
+        let html = '';
+        gearData.forEach(item => {
+            html += `
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <i class="ph ${item.icon} ${item.color} text-xl"></i>
+                    <div>
+                        <span class="block text-xs text-gray-400">${item.type}</span>
+                        <span class="font-semibold text-sm text-gray-800">${item.name}</span>
+                    </div>
+                </div>
+            `;
+        });
+        gearlistEl.innerHTML = html;
+    }
+
+    // 2. Cập nhật số lượng ảnh badge
     const memeBadge = document.getElementById("photoCountBadge");
     if (memeBadge && typeof totalMemeImages !== 'undefined') {
         memeBadge.innerText = totalMemeImages + " ảnh";
@@ -717,6 +714,16 @@ function openLightbox(imgSrc) {
     if (btsBadge && typeof totalBtsImages !== 'undefined') {
         btsBadge.innerText = totalBtsImages + " ảnh";
     }
+
+    // Cập nhật lượt truy cập theo từng trình duyệt.
+    let visits = Number.parseInt(localStorage.getItem('giang_visit_count'), 10);
+    if (!Number.isFinite(visits)) visits = 1428;
+    else visits += 1;
+    localStorage.setItem('giang_visit_count', String(visits));
+    const visitEl = document.getElementById('visitCount');
+    if (visitEl) visitEl.innerText = visits.toLocaleString('vi-VN');
+
+    fetchMessagesFromJSONBin();
   });
 </script>
 </body>
