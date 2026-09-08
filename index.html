@@ -68,6 +68,42 @@
             opacity: 1;
             transform: translate(-50%, -50%) scale(1.08);
         }
+        .avatar-hover-group {
+            position: relative;
+            z-index: 1;
+        }
+        .avatar-hover-overlay,
+        .avatar-hover-image {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .avatar-hover-overlay {
+            inset: 0;
+            z-index: 70;
+            background: rgba(15, 23, 42, 0.72);
+        }
+        .avatar-hover-image {
+            left: 50%;
+            top: 50%;
+            z-index: 71;
+            width: min(88vw, 740px);
+            max-height: 88vh;
+            object-fit: contain;
+            transform: translate(-50%, -50%) scale(0.35);
+            filter: contrast(1.05) saturate(1.08);
+        }
+        .avatar-hover-group:hover .avatar-hover-overlay,
+        .avatar-hover-group:focus-within .avatar-hover-overlay,
+        .avatar-hover-group:hover .avatar-hover-image,
+        .avatar-hover-group:focus-within .avatar-hover-image {
+            opacity: 1;
+        }
+        .avatar-hover-group:hover .avatar-hover-image,
+        .avatar-hover-group:focus-within .avatar-hover-image {
+            transform: translate(-50%, -50%) scale(1);
+        }
         .zalo-phone-popup {
             opacity: 0;
             transform: translate(-50%, 4px);
@@ -154,11 +190,13 @@
     <!-- CỘT BÊN TRÁI -->
     <div class="lg:col-span-5 flex flex-col gap-5">
         <header class="text-center bg-surface rounded-2xl border border-gray-100 shadow-sm p-5">
-            <div class="relative inline-block mb-3">
-              <img src="image/avt.jpg" alt="Giang Nguyễn" class="w-36 h-36 md:w-44 md:h-44 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
-              <div class="absolute bottom-1 right-1 bg-blue-500 text-white rounded-full p-1.5 border-2 border-white shadow-md">
-                <i class="ph-fill ph-check-circle text-xl"></i>
+            <div class="avatar-hover-group relative inline-block mb-3" tabindex="0" aria-label="Phóng to ảnh đại diện">
+              <img src="image/avt.jpg" alt="Giang Nguyễn" class="w-[202px] h-[202px] md:w-[246px] md:h-[246px] object-cover rounded-full shadow-lg border-4 border-white mx-auto transition-transform duration-300 hover:scale-[1.03]">
+              <div class="absolute bottom-2 right-2 w-9 h-9 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                <i class="ph-fill ph-check-circle text-lg"></i>
               </div>
+              <div class="avatar-hover-overlay" aria-hidden="true"></div>
+              <img src="image/avt.jpg" alt="Giang Nguyễn - ảnh đại diện phóng to" class="avatar-hover-image rounded-2xl border-4 border-white shadow-2xl">
             </div>
             
             <h1 class="text-2xl font-bold tracking-tight mb-1">Giang Nguyễn</h1>
