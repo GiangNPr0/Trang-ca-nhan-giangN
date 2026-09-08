@@ -108,6 +108,37 @@
             opacity: 1;
             transform: translateY(0);
         }
+        .album-pop-card {
+            min-height: 112px;
+        }
+        .album-pop-stack img {
+            transform-origin: center;
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), z-index 0s linear 0.2s;
+        }
+        .album-pop-stack img:nth-child(1) {
+            z-index: 1;
+        }
+        .album-pop-stack img:nth-child(2) {
+            z-index: 2;
+        }
+        .album-pop-stack img:nth-child(3) {
+            z-index: 3;
+        }
+        .album-pop-card:hover .album-pop-stack img:nth-child(1),
+        .album-pop-card:focus-within .album-pop-stack img:nth-child(1) {
+            transform: translateX(-62px) rotate(-18deg);
+            z-index: 1;
+        }
+        .album-pop-card:hover .album-pop-stack img:nth-child(2),
+        .album-pop-card:focus-within .album-pop-stack img:nth-child(2) {
+            transform: translateX(62px) rotate(18deg);
+            z-index: 2;
+        }
+        .album-pop-card:hover .album-pop-stack img:nth-child(3),
+        .album-pop-card:focus-within .album-pop-stack img:nth-child(3) {
+            transform: translateY(-3px) scale(1.04);
+            z-index: 3;
+        }
         .local-video-note {
             display: none;
         }
@@ -227,6 +258,40 @@
             </div>
           </div>
         </section>
+        
+        <section id="albumSection" class="space-y-3 opacity-0 animate-fade-in delay-300">
+          <div onclick="openBtsAlbumModal()" class="album-pop-card group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-visible flex items-center gap-4">
+            <div class="album-pop-stack relative w-40 h-24 shrink-0">
+              <img src="image/bts/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 3">
+              <img src="image/bts/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh hậu trường 2">
+              <img src="image/bts/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Ảnh hậu trường">
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="font-bold text-base text-gray-900 group-hover:text-amber-600 transition-colors">Hậu trường</h2>
+                <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Những khoảnh khắc phía sau mỗi khung hình.</p>
+              <span class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">Xem album <i class="ph ph-arrow-right"></i></span>
+            </div>
+          </div>
+
+          <div onclick="openAlbumModal()" class="album-pop-card group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-visible flex items-center gap-4">
+            <div class="album-pop-stack relative w-40 h-24 shrink-0">
+              <img src="image/albummeme/1 (3).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 3">
+              <img src="image/albummeme/1 (2).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-md" alt="Ảnh meme 2">
+              <img src="image/albummeme/1 (1).jpg" class="absolute inset-0 w-full h-full object-cover rounded-xl border-2 border-white shadow-xl" alt="Album meme">
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="font-bold text-base text-gray-900 group-hover:text-blue-600 transition-colors">Album meme</h2>
+                <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Kho ảnh dìm và những kỷ niệm đáng nhớ.</p>
+              <span class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">Xem album <i class="ph ph-arrow-right"></i></span>
+            </div>
+          </div>
+        </section>
     </div>
 
     <!-- CỘT BÊN PHẢI -->
@@ -240,7 +305,7 @@
             <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
             </h3>
-            <div class="video-frame relative w-full aspect-[16/7] rounded-lg overflow-hidden bg-gray-900 shadow-inner">
+            <div class="video-frame relative w-full aspect-video rounded-lg overflow-hidden bg-gray-900 shadow-inner">
               <iframe
                 src="https://www.youtube-nocookie.com/embed/9TKM7gEnvaQ?rel=0&modestbranding=1" 
                 class="absolute top-0 left-0 w-full h-full border-0" 
@@ -264,13 +329,13 @@
               <span class="w-2 h-2 rounded-full bg-blue-600"></span> Chụp kỷ yếu của a Giang Hé Lô
             </h3>
             <div class="grid grid-cols-2 gap-2 sm:gap-3">
-              <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
+              <div class="video-frame fb-video w-full aspect-[9/16] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/1629472991402120" 
                    data-width="500"
                    data-show-text="false"
                    data-allowfullscreen="true">
               </div>
-              <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
+              <div class="video-frame fb-video w-full aspect-[9/16] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/900070975937038" 
                    data-width="500"
                    data-show-text="false"
@@ -293,64 +358,6 @@
           </div>
         </section>
 
-        <section id="albumSection" class="opacity-0 animate-fade-in delay-300">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-                <i class="ph-fill ph-camera text-accent"></i> Hậu trường
-            </h2>
-            <div onclick="openBtsAlbumModal()" class="group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-visible">
-                <div class="relative h-28 rounded-xl overflow-hidden bg-gray-100">
-                    <img src="image/bts/1 (1).jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Ảnh hậu trường">
-                </div>
-                <div class="flex items-center justify-between gap-2 mt-2">
-                    <h3 class="font-bold text-sm text-gray-900">Khoảnh khắc hậu trường</h3>
-                    <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
-                </div>
-                <div class="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-blue-600">
-                    <span>Xem tất cả</span><i class="ph ph-arrow-right"></i>
-                </div>
-            </div>
-            </div>
-            <div>
-            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-                <i class="ph-fill ph-camera text-accent"></i> Album meme
-            </h2>
-            
-            <div onclick="openAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5 overflow-visible">
-    <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 z-30">
-        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
-            <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" alt="Ảnh meme">
-        </div>
-        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
-            <img src="image/albummeme/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-        </div>
-        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-right z-3">
-            <img src="image/albummeme/1 (3).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-        </div>
-        <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-4">
-            <img src="image/albummeme/1 (2).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-        </div>
-        <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-xl border-2 border-white bg-gray-100 group-hover:scale-105 transition-transform duration-300 z-10">
-            <img src="image/albummeme/1 (1).jpg" class="w-full h-full object-cover">
-        </div>
-    </div>
-
-    <div class="flex-1 z-10">
-        <div class="flex items-center justify-between mb-1">
-            <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Bộ sưu tập Meme</h3>
-            <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">4 ảnh</span>
-        </div>
-        <p class="text-sm text-gray-500 mb-3">Nhấn để khám phá toàn bộ kho ảnh dìm và kỷ niệm.</p>
-        <div class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
-            <span>Xem tất cả</span>
-            <i class="ph ph-arrow-right"></i>
-        </div>
-    </div>
-</div>
-            </div>
-            </div>
-        </section>
     </div>
 </main>
 
@@ -369,11 +376,6 @@
                     <h3 class="font-bold text-gray-900 text-lg">Coá gì nhắn lại đây nhá các tình iu</h3>
                     <p class="text-xs text-gray-400">Để lại cảm nghĩ để mọi người cùng đọc nha!</p>
                 </div>
-            </div>
-            <!-- Bộ đếm lượt xem tối ưu chuẩn xác -->
-            <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl text-blue-700 text-xs font-semibold">
-                <i class="ph-fill ph-eye text-base"></i>
-                <span>Lượt đã lướt qua đây: <strong id="visitCount">62</strong></span>
             </div>
         </div>
 
@@ -409,7 +411,7 @@
         <!-- Danh sách hiển thị lời nhắn công khai -->
         <div class="lg:col-span-3 space-y-3">
             <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Lời nhắn gần đây từ mọi người</span>
-            <div id="messagesList" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+            <div id="messagesList" class="space-y-2 min-h-72 max-h-96 overflow-y-auto pr-1"></div>
         </div>
         </div>
     </div>
@@ -438,28 +440,48 @@
 </section>
 
 <section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-    <div class="bg-surface p-3 rounded-xl shadow-sm border border-gray-100">
-        <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 font-bold">
-                <i class="ph ph-heart text-lg"></i>
+    <div class="bg-surface p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+        <div class="text-center sm:text-left space-y-2">
+            <div class="flex items-center justify-center sm:justify-start gap-3 pb-2 border-b border-pink-100">
+              <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 font-bold shadow-sm">
+                <i class="ph-fill ph-heart text-xl"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">A Giang Hế Lô</h2>
+                <span class="text-xs text-pink-500 font-medium">gửi lời này cho cả nhà</span>
+              </div>
             </div>
-            <span class="font-semibold text-gray-800">Donate ở đây nhó</span>
+            <div class="relative rounded-xl bg-gradient-to-br from-pink-50 to-blue-50 p-4 border border-pink-100">
+              <i class="ph-fill ph-quotes text-2xl text-pink-300 absolute top-2 left-3"></i>
+              <p class="text-sm font-medium text-gray-700 italic leading-relaxed pl-6">
+                "Cảm ơn các con vợ đã ghé thăm trang cá nhân cửa a. Chúc con vợ một ngày tốt lành và luôn vui vẻ nhé!"
+              </p>
+              <div class="flex items-center gap-2 mt-3 pl-6">
+                <span class="h-px w-8 bg-pink-300"></span>
+                <span class="text-xs text-pink-500 font-semibold">Giang Nguyễn</span>
+                <i class="ph-fill ph-sparkle text-amber-400"></i>
+              </div>
+            </div>
+            <div class="flex justify-center sm:justify-start gap-1 text-amber-400 text-sm" aria-label="Lời cảm ơn">
+              <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
+            </div>
         </div>
-        <div id="qrHoverGroup" class="qr-hover-group relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-1.5">
+        <div class="space-y-2">
+          <p class="text-xs text-center text-gray-400">Quét đi chứ cười gì nữa</p>
+          <div id="qrHoverGroup" class="qr-hover-group relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-2">
             <img src="image/donate.jpg" alt="Donate QR" class="w-full max-w-[250px] h-[375px] object-cover rounded-lg shadow-sm">
+          </div>
         </div>
     </div>
 </section>
 
 <footer class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8 text-center lg:text-left opacity-0 animate-fade-in delay-300">
-    <div class="bg-surface p-6 rounded-2xl border border-gray-100 shadow-sm max-w-xl mx-auto mb-6 text-center space-y-2">
-      <i class="ph-fill ph-chat-teardrop-text text-blue-500 text-2xl"></i>
-      <p class="text-sm font-medium text-gray-700 italic">
-        "Cảm ơn bạn đã ghé thăm trang cá nhân nhỏ này. Chúc bạn một ngày tốt lành và luôn vui vẻ nhé!"
-      </p>
-      <span class="block text-xs text-gray-400">— Giang Nguyễn —</span>
+    <div class="flex justify-center mb-4">
+      <div class="inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl text-blue-700 text-xs font-semibold">
+        <i class="ph-fill ph-eye text-base"></i>
+        <span>Lượt đã lướt qua đây: <strong id="visitCount">62</strong></span>
+      </div>
     </div>
-
     <p class="text-sm text-gray-400 text-center">
       © 2000 Giang Nguyễn. All rights reserved.
     </p>
