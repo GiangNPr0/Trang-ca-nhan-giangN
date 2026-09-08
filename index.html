@@ -99,7 +99,7 @@
             opacity: 1;
         }
         .avatar-hover-overlay.is-visible {
-            pointer-events: auto;
+            pointer-events: none;
         }
         .avatar-hover-image.is-visible {
             transform: translate(-50%, -50%) scale(1);
@@ -1241,25 +1241,25 @@ function setupDonateQrEffect() {
     if (!group || !overlay || !image) return;
 
     document.body.append(overlay, image);
-    let isOpen = false;
     const close = () => {
-      isOpen = false;
       overlay.classList.remove('is-visible');
       image.classList.remove('is-visible');
       document.body.style.overflow = '';
     };
     const open = () => {
-      isOpen = true;
       overlay.classList.add('is-visible');
       image.classList.add('is-visible');
       document.body.style.overflow = 'hidden';
     };
 
     group.addEventListener('mouseenter', open);
+    group.addEventListener('mouseleave', close);
     group.addEventListener('click', () => {
       open();
     });
-    overlay.addEventListener('click', close);
+    document.addEventListener('click', event => {
+      if (!group.contains(event.target) && event.target !== image) close();
+    });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') close();
     });
