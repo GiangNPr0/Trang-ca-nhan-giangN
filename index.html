@@ -46,7 +46,7 @@
         
         <!-- SECTION 1: Header / Profile -->
         <header class="text-center">
-            <div onclick="openModal('image/1.jpg')" class="relative inline-block mb-4 cursor-pointer">
+            <div onclick="openModal('image/albummeme/1.jpg')" class="relative inline-block mb-4 cursor-pointer">
               <!-- Mắt tui nè -->
               <img src="image/avt.jpg"
                    alt="Giang Nguyễn"
@@ -198,8 +198,13 @@
     </div>
 
     <script>
-      // Danh sách toàn bộ các ảnh trên trang web (Từ sau bạn chỉ cần thêm ảnh vào đây là web tự hiện)
-      const galleryImages = ['image/2.jpg', 'image/3.jpg', 'image/4.jpg', 'image/5.jpg'];
+      // Danh sách 4 ảnh album lấy từ thư mục image/albummeme/
+      const galleryImages = [
+        'image/albummeme/1.jpg',
+        'image/albummeme/2.jpg',
+        'image/albummeme/3.jpg',
+        'image/albummeme/4.jpg'
+      ];
       let currentIndex = 0;
 
       // Tự động tạo giao diện album ảnh khi trang web được tải
@@ -243,6 +248,6 @@
           document.getElementById('modalImg').src = galleryImages[currentIndex];
         }
       });
-</script>
+    </script>
 </body>
 </html>
