@@ -68,25 +68,55 @@
             opacity: 1;
             transform: translate(-50%, -50%) scale(1.08);
         }
+        .zalo-phone-popup {
+            opacity: 0;
+            transform: translate(-50%, 4px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .zalo-link:hover .zalo-phone-popup,
+        .zalo-link:focus-visible .zalo-phone-popup {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        .video-preview-card {
+            position: relative;
+            z-index: 0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0s linear 0.3s;
+        }
+        .video-preview-card:hover,
+        .video-preview-card:focus-within {
+            z-index: 10;
+            transform: scale(1.04);
+            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.2);
+            transition-delay: 0s;
+        }
+        .video-frame {
+            transition: filter 0.3s ease;
+        }
+        .video-preview-card:hover .video-frame,
+        .video-preview-card:focus-within .video-frame {
+            filter: brightness(1.05);
+        }
     </style>
 </head>
 <body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col justify-between">
 
-<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 grid grid-cols-1 lg:grid-cols-12 gap-12 opacity-0 animate-fade-in">
+<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 opacity-0 animate-fade-in">
     
     <!-- CỘT BÊN TRÁI -->
-    <div class="lg:col-span-5 flex flex-col gap-8">
-        <header class="text-center">
-            <div class="relative inline-block mb-4">
-              <img src="image/avt.jpg" alt="Giang Nguyễn" class="w-52 h-52 md:w-60 md:h-60 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
-              <div class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-2 border-2 border-white shadow-md">
-                <i class="ph-fill ph-check-circle text-2xl"></i>
+    <div class="lg:col-span-5 flex flex-col gap-5">
+        <header class="text-center bg-surface rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div class="relative inline-block mb-3">
+              <img src="image/avt.jpg" alt="Giang Nguyễn" class="w-36 h-36 md:w-44 md:h-44 object-cover rounded-full shadow-lg border-4 border-white mx-auto">
+              <div class="absolute bottom-1 right-1 bg-blue-500 text-white rounded-full p-1.5 border-2 border-white shadow-md">
+                <i class="ph-fill ph-check-circle text-xl"></i>
               </div>
             </div>
             
-            <h1 class="text-3xl font-bold tracking-tight mb-2">Giang Nguyễn</h1>
-            <p class="text-text_muted font-medium text-lg mb-3">Giang Hé Lô chào cả nhà</p>
-            <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed mb-4">
+            <h1 class="text-2xl font-bold tracking-tight mb-1">Giang Nguyễn</h1>
+            <p class="text-text_muted font-medium text-base mb-2">Giang Hé Lô chào cả nhà</p>
+            <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed mb-3">
               Đam mê chụp choẹt, khám phá công nghệ và tạo ra những giá trị cho bản thân.
             </p>
             
@@ -103,70 +133,80 @@
             </div>
         </header>
 
-        <section class="opacity-0 animate-fade-in delay-100">
-          <div class="flex flex-col gap-3">
-            <a href="https://facebook.com/n.giang62" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <i class="ph ph-facebook-logo text-2xl"></i>
-                </div>
-                <span class="font-semibold text-gray-800">Facebook nhó</span>
+        <section id="socialSection" class="opacity-0 animate-fade-in delay-100">
+          <div class="grid grid-cols-5 gap-2">
+            <a href="https://facebook.com/n.giang62" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="group flex items-center justify-center bg-surface p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <i class="ph ph-facebook-logo text-xl"></i>
               </div>
-              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
 
-            <a href="https://www.tiktok.com/@gianghesloo" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-black group-hover:text-white transition-colors">
-                  <i class="ph ph-tiktok-logo text-2xl"></i>
-                </div>
-                <span class="font-semibold text-gray-800">Kênh TikTok của Giang hes loo</span>
+            <a href="https://www.tiktok.com/@gianghesloo" target="_blank" rel="noopener noreferrer" aria-label="TikTok" class="group flex items-center justify-center bg-surface p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-black group-hover:text-white transition-colors">
+                <i class="ph ph-tiktok-logo text-xl"></i>
               </div>
-              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
 
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 group-hover:bg-gray-800 group-hover:text-white transition-colors">
-                  <i class="ph ph-github-logo text-2xl"></i>
-                </div>
-                <span class="font-semibold text-gray-800">Dự án trên GitHub (chưa có gì cả huhu)</span>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub" class="group flex items-center justify-center bg-surface p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 group-hover:bg-gray-800 group-hover:text-white transition-colors">
+                <i class="ph ph-github-logo text-xl"></i>
               </div>
-              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
 
-            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=n.giang06022000@gmail.com" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                  <i class="ph ph-envelope-simple text-2xl"></i>
-                </div>
-                <span class="font-semibold text-gray-800">Liên hệ qua Email này nhỏ</span>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=n.giang06022000@gmail.com" target="_blank" rel="noopener noreferrer" aria-label="Email" class="group flex items-center justify-center bg-surface p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                <i class="ph ph-envelope-simple text-xl"></i>
               </div>
-              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
             </a>
 
-            <a href="https://zalo.me/0333302620" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
-              <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors font-bold text-lg shadow-inner">
-                  Z
-                </div>
-                <div>
-                  <span class="block font-semibold text-gray-800">Zalo/SĐT</span>
-                  <span class="block text-xs text-gray-400 font-medium">0333302620</span>
-                </div>
+            <a href="https://zalo.me/0868777408" target="_blank" rel="noopener noreferrer" aria-label="Zalo và số điện thoại 0868777408" class="zalo-link group relative flex items-center justify-center bg-surface p-2 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-0.5">
+              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors font-bold text-lg shadow-inner">
+                Z
               </div>
-              <i class="ph ph-arrow-up-right text-gray-400 group-hover:text-gray-800 transition-colors"></i>
+              <span class="zalo-phone-popup absolute left-1/2 top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg">0868777408</span>
             </a>
 
-            <div class="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 font-bold">
-                  <i class="ph ph-heart text-lg"></i>
-                </div>
-                <span class="font-semibold text-gray-800">Donate ở đây nhó</span>
+          </div>
+        </section>
+
+        <section id="equipmentSection" class="opacity-0 animate-fade-in delay-150">
+          <div class="bg-surface rounded-2xl border border-gray-100 shadow-sm p-4">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2 mb-3">
+              <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+                <i class="ph-fill ph-camera text-lg"></i>
+              </span>
+              <span>Thiết bị sử dụng</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="flex items-center gap-3 rounded-xl bg-blue-50/70 border border-blue-100 p-2.5">
+                <span class="w-9 h-9 shrink-0 rounded-lg bg-blue-100 text-blue-600 inline-flex items-center justify-center">
+                  <i class="ph-fill ph-camera text-lg"></i>
+                </span>
+                <span class="text-sm font-semibold text-gray-700">Nikon Z6III</span>
               </div>
-              <div id="qrHoverGroup" class="qr-hover-group relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-2">
-                <img src="image/donate.jpg" alt="Donate QR" class="w-full max-w-[220px] h-auto object-cover rounded-lg shadow-sm">
+              <div class="flex items-center gap-3 rounded-xl bg-blue-50/70 border border-blue-100 p-2.5">
+                <span class="w-9 h-9 shrink-0 rounded-lg bg-blue-100 text-blue-600 inline-flex items-center justify-center">
+                  <i class="ph-fill ph-camera text-lg"></i>
+                </span>
+                <span class="text-sm font-semibold text-gray-700">Nikon Zf</span>
+              </div>
+              <div class="flex items-center gap-3 rounded-xl bg-violet-50/70 border border-violet-100 p-2.5">
+                <span class="w-9 h-9 shrink-0 rounded-lg bg-violet-100 text-violet-600 inline-flex items-center justify-center">
+                  <i class="ph-fill ph-aperture text-lg"></i>
+                </span>
+                <span class="text-sm font-semibold text-gray-700">Nikon 28-75mm f/2.8</span>
+              </div>
+              <div class="flex items-center gap-3 rounded-xl bg-violet-50/70 border border-violet-100 p-2.5">
+                <span class="w-9 h-9 shrink-0 rounded-lg bg-violet-100 text-violet-600 inline-flex items-center justify-center">
+                  <i class="ph-fill ph-aperture text-lg"></i>
+                </span>
+                <span class="text-sm font-semibold text-gray-700">Nikon 70-200mm f/2.8 VR S</span>
+              </div>
+              <div class="flex items-center gap-3 rounded-xl bg-amber-50/80 border border-amber-100 p-2.5 sm:col-span-2">
+                <span class="w-9 h-9 shrink-0 rounded-lg bg-amber-100 text-amber-600 inline-flex items-center justify-center">
+                  <i class="ph-fill ph-lightning text-lg"></i>
+                </span>
+                <span class="text-sm font-semibold text-gray-700">Godox AD200Pro II</span>
               </div>
             </div>
           </div>
@@ -174,17 +214,17 @@
     </div>
 
     <!-- CỘT BÊN PHẢI -->
-    <div class="lg:col-span-7 flex flex-col gap-8">
-        <section class="space-y-6">
-          <h2 class="flex items-center gap-2 font-bold text-xl text-gray-900">
+    <div class="lg:col-span-7 flex flex-col gap-6">
+        <section class="space-y-4">
+          <h2 class="flex items-center gap-2 font-bold text-lg text-gray-900">
             <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
           </h2>
 
-          <div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+          <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
             <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
             </h3>
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-900 shadow-inner">
+            <div class="video-frame relative w-full aspect-[16/7] rounded-lg overflow-hidden bg-gray-900 shadow-inner">
               <iframe
                 src="https://www.youtube.com/embed/9TKM7gEnvaQ" 
                 class="absolute top-0 left-0 w-full h-full border-0" 
@@ -195,17 +235,17 @@
             </div>
           </div>
 
-          <div class="bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+          <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
             <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-600"></span> Chụp kỷ yếu của a Giang Hé Lô
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
+            <div class="grid grid-cols-2 gap-2 sm:gap-3">
+              <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/1629472991402120" 
                    data-width="auto" 
                    data-show-text="false">
               </div>
-              <div class="fb-video w-full aspect-[9/16] rounded-xl overflow-hidden bg-black" 
+              <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/900070975937038" 
                    data-width="auto" 
                    data-show-text="false">
@@ -214,8 +254,27 @@
           </div>
         </section>
 
-        <section class="opacity-0 animate-fade-in delay-300">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <section id="albumSection" class="opacity-0 animate-fade-in delay-300">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+                <i class="ph-fill ph-camera text-accent"></i> Hậu trường
+            </h2>
+            <div onclick="openBtsAlbumModal()" class="group relative bg-surface p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-visible">
+                <div class="relative h-28 rounded-xl overflow-hidden bg-gray-100">
+                    <img src="image/bts/1 (1).jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Ảnh hậu trường">
+                </div>
+                <div class="flex items-center justify-between gap-2 mt-2">
+                    <h3 class="font-bold text-sm text-gray-900">Khoảnh khắc hậu trường</h3>
+                    <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-1 rounded-full">4 ảnh</span>
+                </div>
+                <div class="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-blue-600">
+                    <span>Xem tất cả</span><i class="ph ph-arrow-right"></i>
+                </div>
+            </div>
+            </div>
+            <div>
+            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
                 <i class="ph-fill ph-camera text-accent"></i> Album meme
             </h2>
             
@@ -251,75 +310,17 @@
     </div>
 </div>
             </div>
+            </div>
         </section>
     </div>
 </main>
-
-<!-- SECTION: Đồ nghề tác nghiệp & Khoảnh khắc đi cày -->
-<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-  <div class="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shadow-sm">
-          <i class="ph ph-camera text-xl"></i>
-        </div>
-        <div>
-          <h3 class="font-bold text-gray-800 text-lg">Đồ nghề tác nghiệp & ảnh hậu trường</h3>
-          <p class="text-xs text-gray-400">Danh sách thiết bị máy ảnh, ánh sáng và khoảnh khắc hậu trường</p>
-        </div>
-      </div>
-      <span class="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">Cập nhật liên tục</span>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <div class="lg:col-span-7 space-y-3">
-        <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Danh sách thiết bị</span>
-        <div id="gearlist" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600"></div>
-      </div>
-
-      <!-- Khoảnh khắc đi cày -->
-      <div class="lg:col-span-5 space-y-3">
-        <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Khoảnh khắc đi cày</span>
-        
-        <div onclick="openBtsAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5 overflow-visible">
-            <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 z-30">
-               <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-left z-1">
-        <img src="image/bts/1 (4).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-    </div>
-    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-1 group-hover:-rotate-[20deg] group-hover:-translate-x-6 group-hover:-translate-y-2 opacity-80 transition-all duration-300 border border-white origin-bottom-left z-2">
-        <img src="image/bts/1 (3).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-    </div>
-    <div class="absolute inset-0 rounded-2xl overflow-hidden shadow-md transform rotate-3 group-hover:-rotate-[38deg] group-hover:-translate-x-12 group-hover:-translate-y-3 opacity-75 transition-all duration-300 border border-white origin-bottom-right z-3">
-        <img src="image/bts/1 (2).jpg" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
-    </div>
-    <div id="btsCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-xl border-2 border-white bg-gray-100 group-hover:scale-105 transition-transform duration-300 z-10">
-        <img src="image/bts/1 (1).jpg" class="w-full h-full object-cover">
-    </div>
-</div>
-
-            <div class="flex-1 z-10">
-                <div class="flex items-center justify-between mb-1">
-                    <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Khoảnh khắc đi cày</h3>
-                    <span id="btsCountBadge" class="text-xs bg-amber-50 text-amber-600 font-semibold px-2.5 py-1 rounded-full">0 ảnh</span>
-                </div>
-                <p class="text-sm text-gray-500 mb-3">Nhấn để xem các góc máy và hậu trường.</p>
-                <div class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
-                    <span>Xem tất cả</span>
-                    <i class="ph ph-arrow-right"></i>
-                </div>
-            </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <div id="qrPageOverlay" class="qr-hover-overlay" aria-hidden="true"></div>
 <img id="qrHoverImage" src="image/qr.jpg" alt="Mã QR Donate phóng to" class="qr-hover-image rounded-xl bg-white p-2 shadow-2xl ring-4 ring-white/90">
 <!-- SECTION: XẾP HẠNG YÊU THÍCH -->
 <!-- SECTION: KHUNG LỜI NHẮN CÔNG KHAI & ĐẾM LƯỢT TRUY CẬP -->
-<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-    <div class="bg-surface p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div class="bg-surface p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-100 pb-4">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
@@ -337,7 +338,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
 <form id="guestbookForm" onsubmit="handleGuestbookSubmit(event)" class="lg:col-span-2 space-y-3">
     <div>
         <input type="text" id="guestName" placeholder="Quắt-gio-nêm...?" required
@@ -369,18 +370,18 @@
         <!-- Danh sách hiển thị lời nhắn công khai -->
         <div class="lg:col-span-3 space-y-3">
             <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Lời nhắn gần đây từ mọi người</span>
-            <div id="messagesList" class="space-y-3 max-h-64 overflow-y-auto pr-1"></div>
+            <div id="messagesList" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
         </div>
         </div>
     </div>
 </section>
 
-<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-    <div class="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div class="bg-surface p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
             <i class="ph-fill ph-trophy text-amber-500"></i> Bảng xếp hạng yêu thích
         </h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
             <div>
                 <h3 class="font-bold text-sm text-gray-800 flex items-center gap-2">
                     <i class="ph-fill ph-images text-blue-600"></i> Top 5 ảnh album
@@ -393,6 +394,20 @@
                 </h3>
                 <div id="messageTopRatedList" class="mt-3 space-y-2"></div>
             </div>
+        </div>
+    </div>
+</section>
+
+<section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+    <div class="bg-surface p-3 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 font-bold">
+                <i class="ph ph-heart text-lg"></i>
+            </div>
+            <span class="font-semibold text-gray-800">Donate ở đây nhó</span>
+        </div>
+        <div id="qrHoverGroup" class="qr-hover-group relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-1.5">
+            <img src="image/donate.jpg" alt="Donate QR" class="w-full max-w-[250px] h-[375px] object-cover rounded-lg shadow-sm">
         </div>
     </div>
 </section>
@@ -456,14 +471,6 @@
   const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
   const JSONBIN_API_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6'; 
   let galleryStore = { messages: [], ratings: {} };
-
-  const gearData = [
-  { type: "Máy ảnh", name: "Nikon Z6III", icon: "ph-aperture", color: "text-blue-500" },
-  { type: "Máy ảnh", name: "Nikon Zf", icon: "ph-aperture", color: "text-blue-500" },
-  { type: "Ống kính", name: "Nikon 28-75mm f/2.8", icon: "ph-stack", color: "text-indigo-500" },
-  { type: "Ống kính", name: "Nikon 70-200mm f/2.8 VR S", icon: "ph-stack", color: "text-indigo-500" },
-  { type: "Đèn flash", name: "Godox AD200Pro II", icon: "ph-lightning", color: "text-amber-500" }
-];
 
   let allGalleryImages = [];
 
@@ -807,9 +814,9 @@ function setupDonateQrEffect() {
           .sort((a, b) => b.favorites - a.favorites)
           .slice(0, 5);
       list.innerHTML = ranked.length ? ranked.map((item, index) => `
-          <button type="button" data-top-image="${escapeHtml(item.image)}" class="w-full flex items-center gap-3 text-left text-xs bg-gray-50 hover:bg-blue-50 p-2.5 rounded-lg transition-colors">
+          <button type="button" data-top-image="${escapeHtml(item.image)}" class="w-full flex items-center gap-2 text-left text-xs bg-gray-50 hover:bg-blue-50 p-2 rounded-lg transition-colors">
               <span class="font-bold text-amber-600 w-5">${index + 1}</span>
-              <img src="${escapeHtml(item.image)}" alt="" class="w-48 h-48 rounded-xl object-cover flex-shrink-0">
+              <img src="${escapeHtml(item.image)}" alt="" class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
               <span class="flex-1"></span>
               <span class="font-semibold text-pink-600 flex items-center gap-1"><i class="ph-fill ph-heart"></i>${item.favorites}</span>
           </button>
@@ -832,9 +839,9 @@ function setupDonateQrEffect() {
           .sort((a, b) => b.favorites - a.favorites)
           .slice(0, 5);
       list.innerHTML = ranked.length ? ranked.map((item, index) => `
-          <button type="button" data-message-top-image="${escapeHtml(item.image)}" class="w-full flex items-center gap-3 text-left text-xs bg-gray-50 hover:bg-pink-50 p-2.5 rounded-lg transition-colors">
+          <button type="button" data-message-top-image="${escapeHtml(item.image)}" class="w-full flex items-center gap-2 text-left text-xs bg-gray-50 hover:bg-pink-50 p-2 rounded-lg transition-colors">
               <span class="font-bold text-pink-600 w-5">${index + 1}</span>
-              <img src="${escapeHtml(item.image)}" alt="Ảnh lời nhắn" class="w-48 h-48 rounded-xl object-cover flex-shrink-0">
+              <img src="${escapeHtml(item.image)}" alt="Ảnh lời nhắn" class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
               <span class="flex-1"></span>
               <span class="font-semibold text-pink-600 flex items-center gap-1"><i class="ph-fill ph-heart"></i>${item.favorites}</span>
           </button>
@@ -929,24 +936,22 @@ function setupDonateQrEffect() {
     }
   }
 
-  // Mở modal chứa lưới ảnh của Khoảnh khắc đi cày (BTS)
   function openBtsAlbumModal() {
-    const gridList = document.getElementById('albumGridList');
     const titleEl = document.getElementById('albumModalTitle');
-    if(titleEl) titleEl.innerText = "Khoảnh khắc đi cày";
+    if (titleEl) titleEl.innerText = 'Album Hậu trường';
 
-    let btsList = [];
+    const btsList = [];
     for (let i = 1; i <= totalBtsImages; i++) {
         btsList.push(`image/bts/1 (${i}).jpg`);
     }
 
     activeAlbumImages = btsList;
-    activeAlbumLabel = 'Ảnh BTS';
-    renderAlbumItems(btsList, 'Ảnh BTS');
+    activeAlbumLabel = 'Ảnh hậu trường';
+    renderAlbumItems(btsList, 'Ảnh hậu trường');
     renderTopRated();
 
     const modal = document.getElementById('albumModal');
-    if(modal) {
+    if (modal) {
         modal.classList.add('flex');
         modal.classList.remove('hidden');
     }
@@ -1017,36 +1022,11 @@ function setupDonateQrEffect() {
     setupImageDropZone();
     setupDonateQrEffect();
 
-    // 1. Render danh sách thiết bị
-    const gearlistEl = document.getElementById('gearlist');
-    if (gearlistEl && typeof gearData !== 'undefined') {
-        const groupedGear = gearData.reduce((groups, item) => {
-            if (!groups[item.type]) groups[item.type] = [];
-            groups[item.type].push(item);
-            return groups;
-        }, {});
-        const html = Object.entries(groupedGear).map(([type, items]) => `
-            <div class="flex items-start gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <i class="ph ${items[0].icon} ${items[0].color} text-xl mt-0.5"></i>
-                <div>
-                    <span class="block text-xs text-gray-400">${type}</span>
-                    ${items.map(item => `<span class="block font-semibold text-sm text-gray-800">${item.name}</span>`).join('')}
-                </div>
-            </div>
-        `).join('');
-        gearlistEl.innerHTML = html;
-    }
-
-    // 2. Cập nhật số lượng ảnh badge
+    // Cập nhật số lượng ảnh badge
     const memeBadge = document.getElementById("photoCountBadge");
     if (memeBadge && typeof totalMemeImages !== 'undefined') {
         memeBadge.innerText = totalMemeImages + " ảnh";
     }
-    const btsBadge = document.getElementById("btsCountBadge");
-    if (btsBadge && typeof totalBtsImages !== 'undefined') {
-        btsBadge.innerText = totalBtsImages + " ảnh";
-    }
-
     // Cập nhật lượt truy cập theo từng trình duyệt.
     let visits = Number.parseInt(localStorage.getItem('giang_visit_count'), 10);
     if (!Number.isFinite(visits)) visits = 1428;
