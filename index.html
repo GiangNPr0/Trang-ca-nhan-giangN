@@ -399,9 +399,11 @@
   const JSONBIN_API_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6'; 
 
   const gearData = [
-  { type: "Máy ảnh", name: "Tên máy ảnh của bạn", icon: "ph-aperture", color: "text-blue-500" },
-  { type: "Ống kính", name: "Tên ống kính của bạn", icon: "ph-stack", color: "text-indigo-500" },
-  { type: "Đèn", name: "Tên đèn của bạn", icon: "ph-lightning", color: "text-amber-500" }
+  { type: "Máy ảnh", name: "Nikon Z6III", icon: "ph-aperture", color: "text-blue-500" },
+  { type: "Máy ảnh", name: "Nikon Zf", icon: "ph-aperture", color: "text-blue-500" },
+  { type: "Ống kính", name: "Nikon 28-75mm f/2.8", icon: "ph-stack", color: "text-indigo-500" },
+  { type: "Ống kính", name: "Nikon 70-200mm f/2.8 VR S", icon: "ph-stack", color: "text-indigo-500" },
+  { type: "Đèn flash", name: "Godox AD200Pro II", icon: "ph-lightning", color: "text-amber-500" }
 ];
 
   let allGalleryImages = [];
@@ -690,18 +692,20 @@ return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
     // 1. Render danh sách thiết bị
     const gearlistEl = document.getElementById('gearlist');
     if (gearlistEl && typeof gearData !== 'undefined') {
-        let html = '';
-        gearData.forEach(item => {
-            html += `
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <i class="ph ${item.icon} ${item.color} text-xl"></i>
-                    <div>
-                        <span class="block text-xs text-gray-400">${item.type}</span>
-                        <span class="font-semibold text-sm text-gray-800">${item.name}</span>
-                    </div>
+        const groupedGear = gearData.reduce((groups, item) => {
+            if (!groups[item.type]) groups[item.type] = [];
+            groups[item.type].push(item);
+            return groups;
+        }, {});
+        const html = Object.entries(groupedGear).map(([type, items]) => `
+            <div class="flex items-start gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <i class="ph ${items[0].icon} ${items[0].color} text-xl mt-0.5"></i>
+                <div>
+                    <span class="block text-xs text-gray-400">${type}</span>
+                    ${items.map(item => `<span class="block font-semibold text-sm text-gray-800">${item.name}</span>`).join('')}
                 </div>
-            `;
-        });
+            </div>
+        `).join('');
         gearlistEl.innerHTML = html;
     }
 
