@@ -88,21 +88,27 @@
             left: 50%;
             top: 50%;
             z-index: 71;
-            width: min(88vw, 740px);
-            max-height: 88vh;
+            width: min(78vw, 620px);
+            max-height: 82vh;
             object-fit: contain;
             transform: translate(-50%, -50%) scale(0.35);
             filter: contrast(1.05) saturate(1.08);
         }
-        .avatar-hover-group:hover .avatar-hover-overlay,
-        .avatar-hover-group:focus-within .avatar-hover-overlay,
-        .avatar-hover-group:hover .avatar-hover-image,
-        .avatar-hover-group:focus-within .avatar-hover-image {
+        .avatar-hover-overlay.is-visible,
+        .avatar-hover-image.is-visible {
             opacity: 1;
         }
-        .avatar-hover-group:hover .avatar-hover-image,
-        .avatar-hover-group:focus-within .avatar-hover-image {
+        .avatar-hover-overlay.is-visible {
+            pointer-events: auto;
+        }
+        .avatar-hover-image.is-visible {
             transform: translate(-50%, -50%) scale(1);
+        }
+        @media (max-width: 640px) {
+            .avatar-hover-image {
+                width: min(82vw, 360px);
+                max-height: 76vh;
+            }
         }
         .zalo-phone-popup {
             opacity: 0;
@@ -410,11 +416,10 @@
     <!-- CỘT BÊN PHẢI -->
     <div class="lg:col-span-7 flex flex-col gap-6">
         <section class="space-y-4">
-          <h2 class="flex items-center gap-2 font-bold text-lg text-gray-900">
-            <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
-          </h2>
-
           <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
+            <h2 class="flex items-center gap-2 font-bold text-lg text-gray-900">
+              <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
+            </h2>
             <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-blue-500"></span> Hoa hậu sinh viên
             </h3>
@@ -1110,6 +1115,7 @@ function setupDonateQrEffect() {
     if(modal) {
         modal.classList.add('flex');
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
   }
 
@@ -1131,6 +1137,7 @@ function setupDonateQrEffect() {
     if (modal) {
         modal.classList.add('flex');
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
   }
 
@@ -1140,6 +1147,7 @@ function setupDonateQrEffect() {
     if(modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        document.body.style.overflow = '';
     }
   }
 
@@ -1198,6 +1206,7 @@ function setupDonateQrEffect() {
   document.addEventListener("DOMContentLoaded", function() {
     setupImageDropZone();
     setupDonateQrEffect();
+    setupAvatarPopup();
     if (window.location.protocol === 'file:') {
         document.body.classList.add('local-file');
     } else {
@@ -1224,6 +1233,37 @@ function setupDonateQrEffect() {
 
     fetchMessagesFromJSONBin();
   });
+
+  function setupAvatarPopup() {
+    const group = document.querySelector('.avatar-hover-group');
+    const overlay = group?.querySelector('.avatar-hover-overlay');
+    const image = group?.querySelector('.avatar-hover-image');
+    if (!group || !overlay || !image) return;
+
+    document.body.append(overlay, image);
+    let isOpen = false;
+    const close = () => {
+      isOpen = false;
+      overlay.classList.remove('is-visible');
+      image.classList.remove('is-visible');
+      document.body.style.overflow = '';
+    };
+    const open = () => {
+      isOpen = true;
+      overlay.classList.add('is-visible');
+      image.classList.add('is-visible');
+      document.body.style.overflow = 'hidden';
+    };
+
+    group.addEventListener('mouseenter', open);
+    group.addEventListener('click', () => {
+      open();
+    });
+    overlay.addEventListener('click', close);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') close();
+    });
+  }
 </script>
 </body>
 </html>
