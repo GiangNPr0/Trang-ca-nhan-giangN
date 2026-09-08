@@ -148,25 +148,13 @@
           </div>
         </section>
 
-        <!-- SECTION 4: Photo Gallery -->
+        <!-- SECTION 4: Photo Gallery (Tự động hiển thị từ mảng JavaScript) -->
         <section class="opacity-0 animate-fade-in delay-300">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                 <i class="ph-fill ph-camera text-accent"></i> Meme Chúa
             </h2>
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div onclick="openModal('image/2.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-                    <img src="image/2.jpg" alt="Ảnh cá nhân 1" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-                </div>
-                <div onclick="openModal('image/3.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-                    <img src="image/3.jpg" alt="Ảnh cá nhân 2" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-                </div>
-                <div onclick="openModal('image/4.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-                    <img src="image/4.jpg" alt="Ảnh cá nhân 3" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-                </div>
-                <div onclick="openModal('image/5.jpg')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer">
-                    <img src="image/5.jpg" alt="Ảnh cá nhân 4" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-                </div>
-            </div>
+            <!-- Khung chứa ảnh sẽ được JavaScript tự động điền vào đây -->
+            <div id="galleryGrid" class="grid grid-cols-2 gap-3 sm:gap-4"></div>
         </section>
 
         <!-- FOOTER -->
@@ -175,13 +163,7 @@
                 © 2000 Giang Nguyễn. All rights reserved.
             </p>
         </footer>
-
     </main>
-
-    <script>
-        document.getElementById('current-year').textContent = new Date().getFullYear();
-    </script>
-
     <div id="fb-root"></div>
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
     <script>
@@ -216,9 +198,21 @@
     </div>
 
     <script>
-      // Danh sách toàn bộ các ảnh trên trang web để hỗ trợ chuyển qua lại
-      const galleryImages = ['image/1.jpg', 'image/2.jpg', 'image/3.jpg', 'image/4.jpg', 'image/5.jpg'];
+      // Danh sách toàn bộ các ảnh trên trang web (Từ sau bạn chỉ cần thêm ảnh vào đây là web tự hiện)
+      const galleryImages = ['image/2.jpg', 'image/3.jpg', 'image/4.jpg', 'image/5.jpg'];
       let currentIndex = 0;
+
+      // Tự động tạo giao diện album ảnh khi trang web được tải
+      document.addEventListener("DOMContentLoaded", function() {
+        const grid = document.getElementById('galleryGrid');
+        if (grid) {
+          grid.innerHTML = galleryImages.map((imgSrc, index) => `
+            <div onclick="openModal('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer shadow-sm hover:shadow-md transition-all">
+                <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
+            </div>
+          `).join('');
+        }
+      });
 
       function openModal(imgSrc) {
         currentIndex = galleryImages.indexOf(imgSrc);
@@ -249,6 +243,6 @@
           document.getElementById('modalImg').src = galleryImages[currentIndex];
         }
       });
-    </script>
+</script>
 </body>
 </html>
