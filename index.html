@@ -37,10 +37,40 @@
         }
         .delay-100 { animation-delay: 0.1s; }
         .delay-300 { animation-delay: 0.3s; }
+        .qr-hover-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.82);
+            opacity: 0;
+            transition: opacity 0.45s ease;
+            pointer-events: none;
+        }
+        .qr-hover-image {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            z-index: 60;
+            width: min(88vw, 520px);
+            max-width: none;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.72);
+            transition: opacity 0.45s ease, transform 0.45s ease;
+            pointer-events: none;
+        }
+        .qr-hover-group.is-active > img:first-child {
+            filter: brightness(0.28) blur(1px);
+        }
+        .qr-hover-overlay.is-visible {
+            opacity: 1;
+        }
+        .qr-hover-image.is-visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.08);
+        }
     </style>
 </head>
 <body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col justify-between">
-<div id="qrDimOverlay" class="fixed inset-0 z-40 bg-black/60 opacity-0 pointer-events-none transition-opacity duration-500" aria-hidden="true"></div>
 
 <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 grid grid-cols-1 lg:grid-cols-12 gap-12 opacity-0 animate-fade-in">
     
@@ -135,9 +165,8 @@
                 </div>
                 <span class="font-semibold text-gray-800">Donate ở đây nhó</span>
               </div>
-              <div id="qrContainer" class="group/qr relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-2">
-                <img id="donateQrImage" src="image/donate.jpg" alt="Donate QR" class="relative z-0 w-full max-w-[220px] h-auto object-cover rounded-lg shadow-sm">
-                <div id="qrFocus" class="pointer-events-none absolute left-1/2 top-[56%] z-[60] h-64 w-64 -translate-x-1/2 -translate-y-1/2 scale-75 rounded-2xl border-4 border-blue-400 bg-white bg-[url('image/donate.jpg')] bg-[length:360%_auto] bg-[position:50%_57%] bg-no-repeat opacity-0 shadow-2xl ring-4 ring-white transition-all duration-500 ease-out group-hover/qr:scale-100 group-hover/qr:opacity-100" aria-hidden="true"></div>
+              <div id="qrHoverGroup" class="qr-hover-group relative overflow-visible rounded-xl border border-gray-100 bg-gray-50 flex justify-center p-2">
+                <img src="image/donate.jpg" alt="Donate QR" class="w-full max-w-[220px] h-auto object-cover rounded-lg shadow-sm">
               </div>
             </div>
           </div>
@@ -285,6 +314,8 @@
   </div>
 </section>
 
+<div id="qrPageOverlay" class="qr-hover-overlay" aria-hidden="true"></div>
+<img id="qrHoverImage" src="image/qr.jpg" alt="Mã QR Donate phóng to" class="qr-hover-image rounded-xl bg-white p-2 shadow-2xl ring-4 ring-white/90">
 <!-- SECTION: XẾP HẠNG YÊU THÍCH -->
 <section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-12">
     <div class="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -562,25 +593,39 @@ function setupImageDropZone() {
   });
 }
 
-function setupDonateQrHighlight() {
-    const qrImage = document.getElementById('donateQrImage');
-    const qrContainer = document.getElementById('qrContainer');
-    const overlay = document.getElementById('qrDimOverlay');
-    if (!qrImage || !qrContainer || !overlay) return;
-    qrImage.addEventListener('mouseenter', () => {
-        qrContainer.classList.add('z-50');
-        overlay.classList.remove('opacity-0');
-        overlay.classList.add('opacity-100');
-        overlay.style.opacity = '1';
-    });
-    qrImage.addEventListener('mouseleave', () => {
-        qrContainer.classList.remove('z-50');
-        overlay.classList.remove('opacity-100');
-        overlay.classList.add('opacity-0');
-        overlay.style.opacity = '0';
-    });
+function setupDonateQrEffect() {
+ const group = document.getElementById('qrHoverGroup');
+ const overlay = document.getElementById('qrPageOverlay');
+ const qrImage = document.getElementById('qrHoverImage');
+ if (!group || !overlay || !qrImage) return;
+
+ const showQr = () => {
+     group.classList.add('is-active');
+     const groupRect = group.getBoundingClientRect();
+     qrImage.style.left = `${groupRect.left + groupRect.width / 2}px`;
+     qrImage.style.top = `${groupRect.top + groupRect.height / 2}px`;
+     overlay.classList.add('is-visible');
+     qrImage.classList.add('is-visible');
+ };
+ const hideQr = () => {
+     group.classList.remove('is-active');
+     overlay.classList.remove('is-visible');
+     qrImage.classList.remove('is-visible');
+ };
+
+ group.addEventListener('mouseenter', () => {
+     group.classList.add('is-active');
+     showQr();
+ });
+ group.addEventListener('mouseleave', hideQr);
+ group.addEventListener('focusin', showQr);
+ group.addEventListener('focusout', hideQr);
+ window.addEventListener('scroll', () => {
+     if (group.classList.contains('is-active')) showQr();
+ }, { passive: true });
 }
-  // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
+
+ // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
 
   // 1. Tải danh sách lời nhắn
   function fetchMessagesFromJSONBin() {
@@ -963,7 +1008,7 @@ function setupDonateQrHighlight() {
   // Tự động cập nhật số lượng ảnh hiển thị lên badge và render danh sách thiết bị khi tải trang xong
   document.addEventListener("DOMContentLoaded", function() {
     setupImageDropZone();
-    setupDonateQrHighlight();
+    setupDonateQrEffect();
 
     // 1. Render danh sách thiết bị
     const gearlistEl = document.getElementById('gearlist');
