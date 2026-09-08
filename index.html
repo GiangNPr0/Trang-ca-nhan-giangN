@@ -98,6 +98,22 @@
         .video-preview-card:focus-within .video-frame {
             filter: brightness(1.05);
         }
+        .video-open-link {
+            opacity: 0.8;
+            transform: translateY(4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .video-preview-card:hover .video-open-link,
+        .video-preview-card:focus-within .video-open-link {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .local-video-note {
+            display: none;
+        }
+        body.local-file .local-video-note {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-background text-primary font-sans antialiased min-h-screen flex flex-col justify-between">
@@ -226,13 +242,21 @@
             </h3>
             <div class="video-frame relative w-full aspect-[16/7] rounded-lg overflow-hidden bg-gray-900 shadow-inner">
               <iframe
-                src="https://www.youtube.com/embed/9TKM7gEnvaQ" 
+                src="https://www.youtube-nocookie.com/embed/9TKM7gEnvaQ?rel=0&modestbranding=1" 
                 class="absolute top-0 left-0 w-full h-full border-0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerpolicy="strict-origin-when-cross-origin"
                 title="Video Hoa hậu sinh viên"
                 allowfullscreen>
               </iframe>
             </div>
+            <a href="https://www.youtube.com/watch?v=9TKM7gEnvaQ" target="_blank" rel="noopener noreferrer"
+               class="video-open-link inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700">
+              <i class="ph ph-arrow-square-out"></i> Mở video trên YouTube
+            </a>
+            <p class="local-video-note text-xs text-amber-600">
+              Đang mở bằng tệp cục bộ — hãy dùng nút trên để phát ổn định trên YouTube.
+            </p>
           </div>
 
           <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
@@ -242,14 +266,29 @@
             <div class="grid grid-cols-2 gap-2 sm:gap-3">
               <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/1629472991402120" 
-                   data-width="auto" 
-                   data-show-text="false">
+                   data-width="500"
+                   data-show-text="false"
+                   data-allowfullscreen="true">
               </div>
               <div class="video-frame fb-video w-full aspect-[3/4] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/900070975937038" 
-                   data-width="auto" 
-                   data-show-text="false">
+                   data-width="500"
+                   data-show-text="false"
+                   data-allowfullscreen="true">
               </div>
+              <div class="flex flex-wrap gap-3 mt-2">
+                <a href="https://www.facebook.com/reel/1629472991402120" target="_blank" rel="noopener noreferrer"
+                   class="video-open-link inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                  <i class="ph ph-arrow-square-out"></i> Reel 1
+                </a>
+                <a href="https://www.facebook.com/reel/900070975937038" target="_blank" rel="noopener noreferrer"
+                   class="video-open-link inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                  <i class="ph ph-arrow-square-out"></i> Reel 2
+                </a>
+              </div>
+              <p class="local-video-note text-xs text-amber-600 mt-1">
+                Nếu Reel không phát trong tệp cục bộ, hãy mở trực tiếp bằng các nút Reel bên trên.
+              </p>
             </div>
           </div>
         </section>
@@ -427,6 +466,12 @@
 </footer>
 
 <div id="fb-root"></div>
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({ xfbml: true, version: 'v18.0' });
+    FB.XFBML.parse();
+  };
+</script>
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
 
 <!-- Modal: Grid Album Chung -->
@@ -1021,6 +1066,16 @@ function setupDonateQrEffect() {
   document.addEventListener("DOMContentLoaded", function() {
     setupImageDropZone();
     setupDonateQrEffect();
+    if (window.location.protocol === 'file:') {
+        document.body.classList.add('local-file');
+    } else {
+        const youtubeFrame = document.querySelector('iframe[title="Video Hoa hậu sinh viên"]');
+        if (youtubeFrame) {
+            const url = new URL(youtubeFrame.src);
+            url.searchParams.set('origin', window.location.origin);
+            youtubeFrame.src = url.toString();
+        }
+    }
 
     // Cập nhật số lượng ảnh badge
     const memeBadge = document.getElementById("photoCountBadge");
