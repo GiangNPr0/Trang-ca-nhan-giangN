@@ -440,21 +440,28 @@ function previewImageFile(file) {
   const image = new Image();
   image.onload = () => {
       URL.revokeObjectURL(objectUrl);
-      const maxDimension = 1200;
+      const maxDimension = 900;
       const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
       canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
 
-      const readCompressedImage = quality => {
+      const readCompressedImage = (quality, resizeAttempts = 0) => {
           canvas.toBlob(blob => {
               if (!blob) {
                   if (label) label.innerText = 'Không nén được ảnh';
                   return;
               }
-              if (blob.size > 80 * 1024 && quality > 0.45) {
+              if (blob.size > 45 * 1024 && quality > 0.25) {
                   readCompressedImage(quality - 0.1);
+                  return;
+              }
+              if (blob.size > 45 * 1024 && resizeAttempts < 3) {
+                  canvas.width = Math.max(1, Math.round(canvas.width * 0.8));
+                  canvas.height = Math.max(1, Math.round(canvas.height * 0.8));
+                  canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                  readCompressedImage(0.65, resizeAttempts + 1);
                   return;
               }
               const reader = new FileReader();
@@ -471,7 +478,7 @@ function previewImageFile(file) {
               reader.readAsDataURL(blob);
           }, 'image/jpeg', quality);
       };
-      readCompressedImage(0.75);
+      readCompressedImage(0.7);
   };
   image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
