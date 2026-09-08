@@ -46,7 +46,7 @@
         
         <!-- SECTION 1: Header / Profile -->
         <header class="text-center">
-            <div onclick="openModal('image/avt.jpg')" class="relative inline-block mb-4 cursor-pointer">
+            <div class="relative inline-block mb-4">
               <!-- Mắt tui nè -->
               <img src="image/avt.jpg"
                    alt="Giang Nguyễn"
@@ -148,13 +148,36 @@
           </div>
         </section>
 
-        <!-- SECTION 4: Photo Gallery (Tự động hiển thị từ mảng JavaScript) -->
+        <!-- SECTION 4: Photo Gallery (Album xếp chồng + Danh sách modal) -->
         <section class="opacity-0 animate-fade-in delay-300">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                 <i class="ph-fill ph-camera text-accent"></i> Album meme
             </h2>
-            <!-- Khung chứa ảnh sẽ được JavaScript tự động điền vào đây -->
-            <div id="galleryGrid" class="grid grid-cols-2 gap-3 sm:gap-4"></div>
+            
+            <!-- Khung Album xếp chồng (Stack Card) -->
+            <div onclick="openAlbumModal()" class="group relative bg-surface p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-5">
+                <!-- Hiệu ứng xếp chồng 3 lớp ảnh giả lập -->
+                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0">
+                    <div class="absolute inset-0 bg-gray-300 rounded-2xl transform rotate-6 translate-x-2 translate-y-1 opacity-60 shadow"></div>
+                    <div class="absolute inset-0 bg-gray-200 rounded-2xl transform -rotate-3 -translate-x-1 -translate-y-1 opacity-80 shadow"></div>
+                    <div id="albumCover" class="absolute inset-0 rounded-2xl overflow-hidden shadow-md border-2 border-white bg-gray-100">
+                        <!-- Ảnh bìa được JS nạp tự động -->
+                    </div>
+                </div>
+
+                <!-- Thông tin Album -->
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Bộ sưu tập Meme</h3>
+                        <span id="photoCountBadge" class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full">0 ảnh</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-3">Nhấn để khám phá toàn bộ kho ảnh dìm và kỷ niệm.</p>
+                    <div class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
+                        <span>Xem tất cả</span>
+                        <i class="ph ph-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- FOOTER -->
@@ -164,6 +187,7 @@
             </p>
         </footer>
     </main>
+    
     <div id="fb-root"></div>
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js#xfbml=1&version=v18.0"></script>
     <script>
@@ -187,18 +211,38 @@
       });
     </script>
 
-    <!-- Khung phóng to ảnh (Lightbox) -->
-    <div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center hidden p-4 cursor-pointer">
-      <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
-        <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl">
-        <button onclick="closeModal()" class="absolute -top-3 -right-3 text-white bg-black/70 hover:bg-black rounded-full p-2 shadow-lg">
-          <i class="ph ph-x text-xl"></i>
-        </button>
-      </div>
+    <!-- Modal 1: Hiển thị danh sách Grid toàn bộ ảnh trong Album -->
+    <div id="albumModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
+        <div class="bg-surface w-full sm:max-w-2xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
+            <!-- Header Modal -->
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div class="flex items-center gap-2">
+                    <i class="ph-fill ph-images text-blue-600 text-xl"></i>
+                    <h3 class="font-bold text-lg text-gray-900">Album Meme của Giang</h3>
+                </div>
+                <button onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+            <!-- Body Grid ảnh -->
+            <div class="p-4 sm:p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3" id="albumGridList">
+                <!-- Được JS tự động render -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Phóng to từng ảnh riêng lẻ (Lightbox) -->
+    <div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4 cursor-pointer">
+        <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
+            <img id="modalImg" src="" class="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl">
+            <button onclick="closeModal()" class="absolute -top-3 -right-3 text-white bg-black/70 hover:bg-black rounded-full p-2 shadow-lg">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
     </div>
 
     <script>
-      // Danh sách 4 ảnh album lấy từ thư mục image/albummeme/
+      // Sau này bạn muốn thêm bao nhiêu ảnh cứ điền tiếp link vào đây thoải mái!
       const galleryImages = [
         'image/albummeme/1.jpg',
         'image/albummeme/2.jpg',
@@ -207,19 +251,36 @@
       ];
       let currentIndex = 0;
 
-      // Tự động tạo giao diện album ảnh khi trang web được tải
+      // Khởi tạo hiển thị ảnh bìa và số lượng ảnh khi tải trang
       document.addEventListener("DOMContentLoaded", function() {
-        const grid = document.getElementById('galleryGrid');
-        if (grid) {
-          grid.innerHTML = galleryImages.map((imgSrc, index) => `
-            <div onclick="openModal('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-200 cursor-pointer shadow-sm hover:shadow-md transition-all">
-                <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500">
-            </div>
-          `).join('');
+        const albumCover = document.getElementById('albumCover');
+        const photoCountBadge = document.getElementById('photoCountBadge');
+        
+        if (galleryImages.length > 0) {
+            albumCover.innerHTML = `<img src="${galleryImages[0]}" class="w-full h-full object-cover">`;
+            photoCountBadge.innerText = galleryImages.length + ' ảnh';
         }
       });
 
-      function openModal(imgSrc) {
+      // Mở danh sách album
+      function openAlbumModal() {
+        const gridList = document.getElementById('albumGridList');
+        gridList.innerHTML = galleryImages.map((imgSrc, index) => `
+            <div onclick="openLightbox('${imgSrc}')" class="aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all group relative">
+                <img src="${imgSrc}" alt="Ảnh ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+            </div>
+        `).join('');
+        document.getElementById('albumModal').classList.remove('hidden');
+      }
+
+      // Đóng danh sách album
+      function closeAlbumModal() {
+        document.getElementById('albumModal').classList.add('hidden');
+      }
+
+      // Mở phóng to ảnh từng cái (Lightbox)
+      function openLightbox(imgSrc) {
         currentIndex = galleryImages.indexOf(imgSrc);
         if (currentIndex === -1) currentIndex = 0;
         
@@ -227,11 +288,12 @@
         document.getElementById('imageModal').classList.remove('hidden');
       }
 
+      // Đóng phóng to ảnh
       function closeModal() {
         document.getElementById('imageModal').classList.add('hidden');
       }
 
-      // Xử lý phím tắt ESC, Mũi tên trái/phải
+      // Xử lý phím tắt ESC, Mũi tên trái/phải khi xem lightbox
       document.addEventListener('keydown', function(event) {
         const modal = document.getElementById('imageModal');
         if (!modal || modal.classList.contains('hidden')) return;
