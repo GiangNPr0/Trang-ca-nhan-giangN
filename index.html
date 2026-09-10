@@ -632,6 +632,20 @@
     </div>
 </form>
 
+        <!-- Gợi ý cho chủ trang: tải file data.js đã cập nhật về thay thế -->
+        <div id="dataSaveHint" class="hidden lg:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 space-y-2">
+            <p class="flex items-center gap-1.5 font-semibold">
+                <i class="ph-fill ph-floppy-disk text-base"></i>
+                Dữ liệu mới đã sẵn sàng lưu vào project
+            </p>
+            <p class="text-emerald-700/80" id="dataSaveCount"></p>
+            <p class="text-emerald-700/80">Bấm nút dưới đây để tải file <code class="font-semibold">data.js</code>, rồi thay thế file cũ trong thư mục dự án (hoặc copy lên hosting). Dữ liệu được lưu ngay trong dự án, không qua bên thứ 3.</p>
+            <button type="button" id="saveDataBtn" onclick="downloadDataFile()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors">
+                <i class="ph ph-download-simple text-sm"></i> Tải data.js đã cập nhật
+            </button>
+        </div>
+
         <!-- Danh sách hiển thị lời nhắn công khai -->
         <div class="relative z-50 lg:col-span-3 space-y-3">
             <span class="message-section-label block text-xs font-semibold text-gray-400 uppercase tracking-wider">Lời nhắn gần đây từ mọi người</span>
@@ -754,14 +768,14 @@
     </button>
 </div>
 
+<script src="data.js"></script>
 <script>
   let totalMemeImages = 0;
   let totalBtsImages = 0;
-  
-  // Cấu hình JSONBin.io của bạn
-  const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
-  const JSONBIN_API_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6'; 
-  let galleryStore = { messages: [], ratings: {} };
+
+  // Dữ liệu của trang giờ nằm ngay trong file data.js của dự án (không còn dùng dịch vụ bên ngoài)
+  let galleryStore = normalizeGalleryStore(window.SITE_DATA || { messages: [], ratings: {} });
+  let galleryDataDirty = false;
 
   let allGalleryImages = [];
   let albumImages = { bts: [], albummeme: [] };
@@ -969,28 +983,15 @@ function setupDonateQrEffect() {
  }, { passive: true });
 }
 
- // ==================== CÁC HÀM XỬ LÝ JSONBIN & LỜI NHẮN ====================
+ // ==================== XỬ LÝ DỮ LIỆU NỘI BỘ (FILE data.js) & LỜI NHẮN ====================
 
-  // 1. Tải danh sách lời nhắn
-  function fetchMessagesFromJSONBin() {
-      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-          headers: { 'X-Master-Key': JSONBIN_API_KEY }
-      })
-      .then(res => {
-          if (!res.ok) throw new Error(`JSONBin GET failed: ${res.status}`);
-          return res.json();
-      })
-      .then(data => {
-          galleryStore = normalizeGalleryStore(data.record);
-          renderMessages(galleryStore.messages);
-          renderTopRated();
-          renderMessageTopRated(galleryStore.messages);
-      })
-      .catch(err => {
-          console.error("Lỗi tải tin nhắn:", err);
-          const listEl = document.getElementById('messagesList');
-          if(listEl) listEl.innerHTML = `<div class="text-xs text-red-500 p-3">Không tải được dữ liệu lời nhắn từ JSONBin!</div>`;
-      });
+  // 1. Nạp danh sách lời nhắn & lượt yêu thích từ file data.js
+  function fetchMessagesFromLocalData() {
+      const data = window.SITE_DATA || { messages: [], ratings: {} };
+      galleryStore = normalizeGalleryStore(data);
+      renderMessages(galleryStore.messages);
+      renderTopRated();
+      renderMessageTopRated(galleryStore.messages);
   }
 
   function normalizeGalleryStore(record) {
@@ -1001,25 +1002,51 @@ function setupDonateQrEffect() {
       };
   }
 
+  // Lưu dữ liệu mới nhất về file data.js (tự quản lý, không qua bên thứ 3)
   function saveGalleryStore() {
-      const payload = JSON.stringify(galleryStore);
-      if (new Blob([payload]).size > 90 * 1024) {
-          throw new Error('Dữ liệu quá lớn. Hãy xóa bớt lời nhắn hoặc ảnh đính kèm cũ.');
+      galleryDataDirty = true;
+      try {
+          localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore));
+          sessionStorage.setItem('giang_session_dirty', '1');
+      } catch (err) { console.warn('Không lưu được bản backup cục bộ:', err); }
+      const saveBtn = document.getElementById('saveDataBtn');
+      if (saveBtn) {
+          saveBtn.classList.remove('pointer-events-none', 'opacity-40');
+          saveBtn.setAttribute('aria-disabled', 'false');
       }
-      return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-          method: 'PUT',
-          headers: {
-              'Content-Type': 'application/json',
-              'X-Master-Key': JSONBIN_API_KEY
-          },
-          body: payload
-      }).then(res => {
-          if (!res.ok) throw new Error(`JSONBin PUT failed: ${res.status}`);
-          return res.json();
-      });
+      return Promise.resolve();
   }
 
-  // 2. Gửi lời nhắn mới
+  // Hiển thị gợi ý cho chủ trang: bấm để tải file data.js đã cập nhật
+  function showDataSaveHint() {
+      const hint = document.getElementById('dataSaveHint');
+      if (!hint) return;
+      hint.classList.remove('hidden');
+      const countEl = document.getElementById('dataSaveCount');
+      if (countEl) {
+          const n = galleryStore.messages.length;
+          const f = Object.values(galleryStore.ratings || {}).reduce((s, r) => s + (r?.favorites || 0), 0);
+          countEl.textContent = `${n} lời nhắn · ${f} lượt yêu thích`;
+      }
+  }
+
+  // Tải file data.js mới nhất để chủ trang thay thế ngay trong thư mục dự án
+  function downloadDataFile() {
+      const payload = 'window.SITE_DATA = ' + JSON.stringify(galleryStore, null, 2) + ';';
+      const blob = new Blob([payload], { type: 'text/javascript;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'data.js';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      // File mới đã có đủ dữ liệu mầm nhất - xoá cờ "đang thay đổi" để lần mở sau không ghi đè lại
+      try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
+  }
+
+  // 2. Gửi lời nhắn mới (lưu trực tiếp vào dữ liệu nội bộ, không qua bên thứ 3)
   function handleGuestbookSubmit(e) {
       e.preventDefault();
       const nameInput = document.getElementById('guestName');
@@ -1036,47 +1063,29 @@ function setupDonateQrEffect() {
           submitBtn.innerHTML = `<span>Đang gửi...</span>`;
       }
 
-      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-          headers: { 'X-Master-Key': JSONBIN_API_KEY }
-      })
-      .then(res => {
-          if (!res.ok) throw new Error(`JSONBin GET failed: ${res.status}`);
-          return res.json();
-      })
-      .then(data => {
-          galleryStore = normalizeGalleryStore(data.record);
-          const currentMessages = galleryStore.messages;
-          
-          const now = new Date();
-          const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
 
-          currentMessages.unshift({
-    name, 
-    message, 
-    image: selectedImageBase64 || null, 
-    time: timeStr 
-});
-
-          return saveGalleryStore();
-      })
-      .then(data => {
-          galleryStore = normalizeGalleryStore(data.record);
-          renderMessages(galleryStore.messages);
-          renderMessageTopRated(galleryStore.messages);
-          const form = document.getElementById('guestbookForm');
-          if(form) form.reset();
-          removeSelectedImage();
-      })
-      .catch(err => {
-          alert(`Gửi lời nhắn thất bại: ${err.message}`);
-          console.error(err);
-      })
-      .finally(() => {
-          if(submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = `<span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>`;
-          }
+      galleryStore.messages.unshift({
+          name,
+          message,
+          image: selectedImageBase64 || null,
+          time: timeStr
       });
+
+      saveGalleryStore();
+      renderMessages(galleryStore.messages);
+      renderMessageTopRated(galleryStore.messages);
+
+      const form = document.getElementById('guestbookForm');
+      if(form) form.reset();
+      removeSelectedImage();
+
+      if(submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>`;
+      }
+      showDataSaveHint();
   }
 
   // 3. Hiển thị danh sách lời nhắn ra giao diện
@@ -1245,23 +1254,11 @@ function setupDonateQrEffect() {
       const active = hasFavorite(image);
       rating.favorites = Math.max(0, rating.favorites + (active ? -1 : 1));
       galleryStore.ratings[image] = rating;
-      Promise.resolve()
-          .then(() => saveGalleryStore())
-          .then(() => {
-              localStorage.setItem(`giang_favorite_${image}`, active ? '0' : '1');
-              refreshAlbum();
-              renderMessages(galleryStore.messages);
-          })
-          .catch(error => {
-              if (error.message === 'Dữ liệu quá lớn. Hãy xóa bớt lời nhắn hoặc ảnh đính kèm cũ.') {
-                  localStorage.setItem(`giang_favorite_${image}`, active ? '0' : '1');
-                  refreshAlbum();
-                  renderMessages(galleryStore.messages);
-                  return;
-              }
-              galleryStore.ratings[image].favorites = Math.max(0, galleryStore.ratings[image].favorites + (active ? 1 : -1));
-              alert(`Không lưu được yêu thích: ${error.message}`);
-          });
+      localStorage.setItem(`giang_favorite_${image}`, active ? '0' : '1');
+      saveGalleryStore();
+      refreshAlbum();
+      renderMessages(galleryStore.messages);
+      showDataSaveHint();
   }
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
@@ -1406,7 +1403,25 @@ function setupDonateQrEffect() {
     const visitEl = document.getElementById('visitCount');
     if (visitEl) visitEl.innerText = visits.toLocaleString('vi-VN');
 
-    fetchMessagesFromJSONBin();
+    fetchMessagesFromLocalData();
+    // Khôi phục dữ liệu đã thay đổi trong phiên này (nếu có) để tránh mất lời nhắn mới khi F5
+    try {
+        const DirtyFlag = sessionStorage.getItem('giang_session_dirty') === '1';
+        const backup = localStorage.getItem('giang_site_data_backup');
+        if (DirtyFlag && backup && window.SITE_DATA) {
+            const parsed = JSON.parse(backup);
+            const merged = normalizeGalleryStore(parsed);
+            if (JSON.stringify(merged.messages) !== JSON.stringify(galleryStore.messages)
+                || JSON.stringify(merged.ratings) !== JSON.stringify(galleryStore.ratings)) {
+                galleryStore = merged;
+                galleryDataDirty = true;
+                renderMessages(galleryStore.messages);
+                renderTopRated();
+                renderMessageTopRated(galleryStore.messages);
+            }
+        }
+    } catch (err) { console.warn('Bỏ qua khôi phục backup cục bộ:', err); }
+    if (galleryDataDirty) showDataSaveHint();
   });
 
   function setupThemeToggle() {
