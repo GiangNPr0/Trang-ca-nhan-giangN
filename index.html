@@ -761,9 +761,17 @@ const fallbackAlbumImages = {
     albummeme: Array.from({ length: 4 }, (_, index) => `image/albummeme/1 (${index + 1}).jpg`)
 };
 
-let selectedImageBase64 = null;
-// Giới hạn dung lượng mỗi ảnh lời nhắn (nén) để bin jsonbin.io bản Free (~100KB) chứa được nhiều ảnh hơn
-const MAX_IMAGE_BYTES = 30 * 1024;
+let selectedImageSource = null;
+
+// ==================== LƯU ẢNH LỜI NHẮN QUA CLOUDINARY ====================
+// Ảnh được nén nhẹ rồi tải trực tiếp từ trình duyệt lên Cloudinary (unsigned upload).
+// Chỉ URL ngắn của ảnh được lưu trong jsonbin.io → bin không còn bị giới hạn 100KB vì ảnh.
+// >>> ĐIỀN 2 GIÁ TRỊ DƯỚI ĐÂY bằng thông tin trong dashboard Cloudinary của bạn <<<
+const CLOUDINARY_CLOUD_NAME = 'g9uxwrbl';
+const CLOUDINARY_UPLOAD_PRESET = 'GiangNweb';
+const CLOUDINARY_FOLDER = 'giang-loi-nhan';
+const IMAGE_MAX_DIMENSION = 1280;
+const IMAGE_MAX_BYTES = 400 * 1024;
 
 function setAlbumImages(albums) {
     albumImages = {
@@ -826,67 +834,92 @@ function previewSelectedImage(input) {
   }
 }
 
-function previewImageFile(file) {
+// Nén ảnh trong canvas trước khi tải lên để tiết kiệm băng thông Cloudinary
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          const attempt = (quality, resizeAttempts = 0) => {
+              canvas.toBlob(blob => {
+                  if (!blob) { reject(new Error('Không nén được ảnh')); return; }
+                  if (blob.size > IMAGE_MAX_BYTES && quality > 0.35) { attempt(quality - 0.1, resizeAttempts); return; }
+                  if (blob.size > IMAGE_MAX_BYTES && resizeAttempts < 3) {
+                      canvas.width = Math.max(1, Math.round(canvas.width * 0.8));
+                      canvas.height = Math.max(1, Math.round(canvas.height * 0.8));
+                      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                      attempt(0.7, resizeAttempts + 1);
+                      return;
+                  }
+                  resolve(blob);
+              }, 'image/jpeg', quality);
+          };
+          attempt(0.8);
+      };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Không đọc được ảnh')); };
+      image.src = objectUrl;
+  });
+}
+
+// Tải ảnh lên Cloudinary bằng unsigned upload preset, trả về URL ảnh
+async function uploadToCloudinary(blob) {
+  if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME.indexOf('thay-bang') === 0 ||
+      !CLOUDINARY_UPLOAD_PRESET || CLOUDINARY_UPLOAD_PRESET.indexOf('thay-bang') === 0) {
+      throw new Error('Chưa cấu hình Cloudinary (cloud name / upload preset)');
+  }
+  const formData = new FormData();
+  formData.append('file', blob, 'loi-nhan.jpg');
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  if (CLOUDINARY_FOLDER) formData.append('folder', CLOUDINARY_FOLDER);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+  });
+  if (!res.ok) throw new Error('Cloudinary tải ảnh thất bại: ' + res.status);
+  const data = await res.json();
+  if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL ảnh');
+  return data.secure_url;
+}
+
+async function previewImageFile(file) {
   const label = document.getElementById('imageLabelText');
   if (!file.type.startsWith('image/')) {
       if (label) label.innerText = 'Vui lòng chọn file ảnh';
       return;
   }
-  if (file.size > 5 * 1024 * 1024) {
-      if (label) label.innerText = 'Ảnh tối đa 5MB';
+  if (file.size > 10 * 1024 * 1024) {
+      if (label) label.innerText = 'Ảnh tối đa 10MB';
       return;
   }
 
-  if (label) label.innerText = 'Đang nén ảnh...';
-  const objectUrl = URL.createObjectURL(file);
-  const image = new Image();
-  image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const maxDimension = 900;
-      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+  selectedImageSource = null;
+  if (label) label.innerText = 'Đang xử lý ảnh...';
+  try {
+      const blob = await compressImage(file);
+      const previewImg = document.getElementById('imagePreview');
+      if (previewImg) {
+          if (previewImg.dataset.objectUrl) URL.revokeObjectURL(previewImg.dataset.objectUrl);
+          const objectUrl = URL.createObjectURL(blob);
+          previewImg.dataset.objectUrl = objectUrl;
+          previewImg.src = objectUrl;
+      }
+      document.getElementById('imagePreviewContainer')?.classList.remove('hidden');
 
-      const readCompressedImage = (quality, resizeAttempts = 0) => {
-          canvas.toBlob(blob => {
-              if (!blob) {
-                  if (label) label.innerText = 'Không nén được ảnh';
-                  return;
-              }
-              if (blob.size > MAX_IMAGE_BYTES && quality > 0.25) {
-                  readCompressedImage(quality - 0.1);
-                  return;
-              }
-              if (blob.size > MAX_IMAGE_BYTES && resizeAttempts < 3) {
-                  canvas.width = Math.max(1, Math.round(canvas.width * 0.8));
-                  canvas.height = Math.max(1, Math.round(canvas.height * 0.8));
-                  canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-                  readCompressedImage(0.65, resizeAttempts + 1);
-                  return;
-              }
-              const reader = new FileReader();
-              reader.onload = event => {
-                  if (typeof event.target.result !== 'string') return;
-                  selectedImageBase64 = event.target.result;
-                  document.getElementById('imagePreview').src = selectedImageBase64;
-                  document.getElementById('imagePreviewContainer').classList.remove('hidden');
-                  document.getElementById('imageLabelText').innerText = 'Đổi ảnh';
-              };
-              reader.onerror = () => {
-                  if (label) label.innerText = 'Không đọc được ảnh';
-              };
-              reader.readAsDataURL(blob);
-          }, 'image/jpeg', quality);
-      };
-      readCompressedImage(0.7);
-  };
-  image.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      if (label) label.innerText = 'Không đọc được ảnh';
-  };
-  image.src = objectUrl;
+      if (label) label.innerText = 'Đang tải ảnh lên...';
+      selectedImageSource = await uploadToCloudinary(blob);
+      if (label) label.innerText = '✓ Ảnh đã sẵn sàng';
+  } catch (err) {
+      console.error('Tải ảnh lên Cloudinary thất bại:', err);
+      selectedImageSource = null;
+      if (label) label.innerText = 'Không tải được ảnh, thử lại';
+  }
 }
 
 function handleImageDrop(event) {
@@ -906,10 +939,20 @@ function handleImageDrop(event) {
 }
 
 function removeSelectedImage() {
-  selectedImageBase64 = null;
-  document.getElementById('imageInput').value = '';
-  document.getElementById('imagePreviewContainer').classList.add('hidden');
-  document.getElementById('imageLabelText').innerText = 'Thêm ảnh hoặc kéo thả';
+  selectedImageSource = null;
+  const input = document.getElementById('imageInput');
+  if (input) input.value = '';
+  document.getElementById('imagePreviewContainer')?.classList.add('hidden');
+  const previewImg = document.getElementById('imagePreview');
+  if (previewImg) {
+      if (previewImg.dataset.objectUrl) {
+          URL.revokeObjectURL(previewImg.dataset.objectUrl);
+          delete previewImg.dataset.objectUrl;
+      }
+      previewImg.removeAttribute('src');
+  }
+  const label = document.getElementById('imageLabelText');
+  if (label) label.innerText = 'Thêm ảnh hoặc kéo thả';
 }
 
 function setupImageDropZone() {
@@ -1245,6 +1288,11 @@ function setupDonateQrEffect() {
       if(!name || !message) return;
 
       const submitBtn = document.getElementById('submitBtn');
+      const fileInput = document.getElementById('imageInput');
+      if (fileInput && fileInput.files && fileInput.files.length > 0 && !selectedImageSource) {
+          showAutoSaveToast('⚠ Ảnh đang tải lên, đợi chút rồi gửi lại nhé', false);
+          return;
+      }
       if(submitBtn) {
           submitBtn.disabled = true;
           submitBtn.innerHTML = `<span>Đang gửi...</span>`;
@@ -1256,7 +1304,7 @@ function setupDonateQrEffect() {
       galleryStore.messages.unshift({
           name,
           message,
-          image: selectedImageBase64 || null,
+          image: selectedImageSource || null,
           time: timeStr
       });
 
@@ -1337,9 +1385,11 @@ function setupDonateQrEffect() {
       return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Cho phép ảnh base64 (dữ liệu cũ) hoặc URL ảnh Cloudinary đã tải lên
   function isSafeImageSource(source) {
-      return typeof source === 'string' &&
-          /^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(source);
+      if (typeof source !== 'string') return false;
+      if (/^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(source)) return true;
+      return /^https:\/\/res\.cloudinary\.com\/[^\s"']+$/i.test(source);
   }
 
   function getRating(image) {
