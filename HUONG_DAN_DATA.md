@@ -21,15 +21,20 @@ window.SITE_DATA = {
 - `messages`: danh sách lời nhắn (mở nhất trước). `image` là chuỗi `data:image/...;base64,...` hoặc `null`.
 - `ratings`: bản đồ số lượt yêu thích theo đường dẫn ảnh (khóa chính là `src` của ảnh).
 
-### Khi có lời nhắn / lượt yêu thích mới phát sinh như thế nào?
+### Khi có lời nhắn / lượt yêu thích mới — sẽ TỰ ĐỘNG cập nhật
 
-1. Người truy cập gửi lời nhắn hoặc bấm "Yêu thích" trên trang → dữ liệu được lưu tạm (backup) trong trình duyệt.
-2. Trang hiện hộp **"Dữ liệu mới đã sẵn sàng lưu vào project"** kèm nút **"Tải data.js đã cập nhật"**.
-3. Bạn bấm nút đó → tải về file `data.js` mới nhất, rồi **thay thế file `data.js` trong thư mục dự án** (hoặc copy lên hosting). Lời nhắn/lượt yêu thích mới sẽ hiển thị với mọi người.
+1. Trang dùng **File System Access API**: **lần đầu tiên** bạn gửi lời nhắn hoặc bấm "Yêu thích", trình duyệt (Edge/Chrome) hiện hộp thoại lưu file — hãy chọn **file `data.js` trong thư mục dự án** rồi bấm Save (chấp nhận ghi đè nếu được hỏi).
+2. Từ đó trở đi, **mọi lời nhắn / lượt yêu thích được TỰ ĐỘNG ghi đè vào `data.js`**, không cần thao tác gì thêm. Mỗi lần lưu chỉ hiện thông báo nhỏ "✓ Đã tự động lưu" ở góc phải màn hình.
+3. Quyền ghi file được trình duyệt nhớ (lưu trong IndexedDB), nên các lần sau không bị hỏi lại.
 
-> Mẹo: Cũng có thể mở thẳng `data.js` và tự sửa bằng tay (thêm/sửa/xóa) — trước mắt nên tạo bản sao lưu ở thư mục `báckup/`.
+> Bạn chỉ cần mở trang bằng đúng file `index.html` trên máy đặt chứa dự án thì mọi dữ liệu mới luôn đồng bộ tự động — dữ liệu nằm hoàn toàn trong dự án của bạn, không qua bên thứ 3.
+
+### Trình duyệt không hỗ trợ tự lưu (Firefox, Safari, ...)
+
+Trang sẽ tự hạ cấp: hiện toast đỏ **"Trình duyệt chưa cho tự lưu file"** kèm link **"tải thủ công"** — bấm để tải `data.js` rồi đè file cũ theo cách thủ công. Dữ liệu vẫn được backup tạm trong trình duyệt nên không bị mất khi tải lại trang.
 
 ### Lưu ý
 
-- Nếu mở thẳng bằng `double-click` (giao thức `file://`) một số trình duyệt chặn đọc các file đồng, nhưng `data.js` dùng cơ chế `<script>` nên vẫn hoạt động.
+- Khuyến nghị mở trang bằng **Edge hoặc Chrome** để được tự động lưu.
+- Vẫn có thể mở thẳng `data.js` và tự sửa bằng tay (thêm/sửa/xóa lời nhắn, lượt yêu thích). Nên sao lưu ở thư mục `báckup/` trước khi sửa.
 - Không còn giới hạn 90KB của JSONBin nữa; tuy nhiên ảnh đính kèm base64 rất nặng, nên ưu tiên ảnh nhỏ (trang đã tự nén ảnh xuống <45KB trước khi gửi).

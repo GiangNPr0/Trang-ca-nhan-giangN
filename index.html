@@ -632,19 +632,8 @@
     </div>
 </form>
 
-        <!-- Gợi ý cho chủ trang: tải file data.js đã cập nhật về thay thế -->
-        <div id="dataSaveHint" class="hidden lg:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 space-y-2">
-            <p class="flex items-center gap-1.5 font-semibold">
-                <i class="ph-fill ph-floppy-disk text-base"></i>
-                Dữ liệu mới đã sẵn sàng lưu vào project
-            </p>
-            <p class="text-emerald-700/80" id="dataSaveCount"></p>
-            <p class="text-emerald-700/80">Bấm nút dưới đây để tải file <code class="font-semibold">data.js</code>, rồi thay thế file cũ trong thư mục dự án (hoặc copy lên hosting). Dữ liệu được lưu ngay trong dự án, không qua bên thứ 3.</p>
-            <button type="button" id="saveDataBtn" onclick="downloadDataFile()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors">
-                <i class="ph ph-download-simple text-sm"></i> Tải data.js đã cập nhật
-            </button>
-        </div>
+        <!-- Thông báo ngắn khi TỰ ĐỘNG lưu (ẩn; không còn hộp hướng dẫn thủ công) -->
+        <div id="autoSaveToast" class="fixed bottom-4 right-4 z-[110] hidden max-w-xs rounded-xl border px-3 py-2 text-xs font-medium shadow-lg"></div>
 
         <!-- Danh sách hiển thị lời nhắn công khai -->
         <div class="relative z-50 lg:col-span-3 space-y-3">
@@ -658,7 +647,7 @@
 <section class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-8">
     <div class="bg-surface p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <i class="ph-fill ph-trophy text-amber-500"></i> Bảng xếp hạng yêu thích
+            <i class="ph-fill ph-trophy text-amber-500"></i> Bảng xếp hạng
         </h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
             <div>
@@ -1002,48 +991,129 @@ function setupDonateQrEffect() {
       };
   }
 
-  // Lưu dữ liệu mới nhất về file data.js (tự quản lý, không qua bên thứ 3)
+  // ==================== TỰ ĐỘNG LƯU VÀO FILE data.js ====================
+  // Dùng "File System Access API": lần đầu trang xin quyền ghi đè file data.js
+  // (1 lần duy nhất), sau đó MỌI lời nhắn / lượt yêu thích được tự động ghi vào file.
+  const AUTO_FILE_NAME = 'data.js';
+  let autoSaveQueue = Promise.resolve();
+
+  function openHandleStore() {
+      return new Promise((resolve, reject) => {
+          let req;
+          try { req = indexedDB.open('giang_file_handle', 1); }
+          catch (err) { reject(err); return; }
+          req.onupgradeneeded = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+      });
+  }
+
+  async function keepFileHandle(fileHandle) {
+      const db = await openHandleStore();
+      return new Promise((resolve, reject) => {
+          const tx = db.transaction('handles', 'readwrite');
+          tx.objectStore('handles').put(fileHandle, AUTO_FILE_NAME);
+          tx.oncomplete = () => { db.close(); resolve(); };
+          tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+  }
+
+  async function readStoredFileHandle() {
+      const db = await openHandleStore();
+      return new Promise(resolve => {
+          const tx = db.transaction('handles', 'readonly');
+          const get = tx.objectStore('handles').get(AUTO_FILE_NAME);
+          get.onsuccess = () => { db.close(); resolve(get.result || null); };
+          get.onerror = () => { db.close(); resolve(null); };
+      });
+  }
+
+  function showAutoSaveToast(message, ok, extraHtml) {
+      const toast = document.getElementById('autoSaveToast');
+      if (!toast) return;
+      toast.className = 'fixed bottom-4 right-4 z-[110] max-w-xs rounded-xl border px-3 py-2 text-xs font-medium shadow-lg ' +
+          (ok ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-red-500 text-white border-red-700');
+      toast.innerHTML = extraHtml || message;
+      clearTimeout(window.__autoSaveToastTimer);
+      window.__autoSaveToastTimer = setTimeout(() => {
+          toast.classList.add('hidden');
+      }, 4200);
+  }
+
+  function buildDataPayload() {
+      return 'window.SITE_DATA = ' + JSON.stringify(galleryStore, null, 2) + ';';
+  }
+
+  // Ghi đè file data.js. Kết quả: 'saved' | 'cancelled' | 'unsupported' | 'error'
+  async function writeToDataFile() {
+      const payload = buildDataPayload();
+      let fileHandle = null;
+      try { fileHandle = await readStoredFileHandle(); } catch (err) { fileHandle = null; }
+      if (!fileHandle) {
+          if (!window.showSaveFilePicker) return 'unsupported';
+          try {
+              fileHandle = await window.showSaveFilePicker({
+                  suggestedName: AUTO_FILE_NAME,
+                  types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
+              });
+          } catch (err) { return 'cancelled'; }
+      }
+      try {
+          const writable = await fileHandle.createWritable();
+          await writable.write(payload);
+          await writable.close();
+          if (window.showSaveFilePicker) keepFileHandle(fileHandle).catch(() => {});
+          return 'saved';
+      } catch (err) { return 'error'; }
+  }
+
+  // Tự động lưu khi có dữ liệu mới (chạy tuần tự, không ghi chồng lên nhau)
+  function syncDataToFile() {
+      const task = autoSaveQueue.then(() => writeToDataFile()).then(result => {
+          if (result === 'saved') {
+              try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
+              showAutoSaveToast('✓ Đã tự động lưu vào data.js', true);
+          } else if (result === 'cancelled') {
+              // Người dùng đóng hộp thoại - thao tác sau sẽ hỏi lại, không thông báo ồn
+          } else {
+              const manualLink = ' <a href="#" onclick="downloadDataFile();return false;" class="underline font-semibold">tải thủ công</a>';
+              showAutoSaveToast('Chưa tự lưu được', false, '⚠ Trình duyệt chưa cho tự lưu file —' + manualLink);
+          }
+      }).catch(err => {
+          console.warn('Không thể tự động lưu data.js:', err);
+          showAutoSaveToast('⚠ Lỗi tự động lưu data.js', false);
+      });
+      autoSaveQueue = task.catch(() => {});
+      return autoSaveQueue;
+  }
+
+  // Lưu dự phòng: nếu trình duyệt không hỗ trợ tự lưu, người dùng vẫn tải được file
+  function downloadDataFile() {
+      const payload = buildDataPayload();
+      const blob = new Blob([payload], { type: 'text/javascript;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = AUTO_FILE_NAME;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
+  }
+
+  // Lưu dữ liệu mới nhất: backup cục bộ + tự động ghi đè file data.js
   function saveGalleryStore() {
       galleryDataDirty = true;
       try {
           localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore));
           sessionStorage.setItem('giang_session_dirty', '1');
       } catch (err) { console.warn('Không lưu được bản backup cục bộ:', err); }
-      const saveBtn = document.getElementById('saveDataBtn');
-      if (saveBtn) {
-          saveBtn.classList.remove('pointer-events-none', 'opacity-40');
-          saveBtn.setAttribute('aria-disabled', 'false');
-      }
+      syncDataToFile();
       return Promise.resolve();
-  }
-
-  // Hiển thị gợi ý cho chủ trang: bấm để tải file data.js đã cập nhật
-  function showDataSaveHint() {
-      const hint = document.getElementById('dataSaveHint');
-      if (!hint) return;
-      hint.classList.remove('hidden');
-      const countEl = document.getElementById('dataSaveCount');
-      if (countEl) {
-          const n = galleryStore.messages.length;
-          const f = Object.values(galleryStore.ratings || {}).reduce((s, r) => s + (r?.favorites || 0), 0);
-          countEl.textContent = `${n} lời nhắn · ${f} lượt yêu thích`;
-      }
-  }
-
-  // Tải file data.js mới nhất để chủ trang thay thế ngay trong thư mục dự án
-  function downloadDataFile() {
-      const payload = 'window.SITE_DATA = ' + JSON.stringify(galleryStore, null, 2) + ';';
-      const blob = new Blob([payload], { type: 'text/javascript;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'data.js';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      // File mới đã có đủ dữ liệu mầm nhất - xoá cờ "đang thay đổi" để lần mở sau không ghi đè lại
-      try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
   }
 
   // 2. Gửi lời nhắn mới (lưu trực tiếp vào dữ liệu nội bộ, không qua bên thứ 3)
@@ -1085,7 +1155,6 @@ function setupDonateQrEffect() {
           submitBtn.disabled = false;
           submitBtn.innerHTML = `<span>Gửi</span> <i class="ph ph-paper-plane-tilt"></i>`;
       }
-      showDataSaveHint();
   }
 
   // 3. Hiển thị danh sách lời nhắn ra giao diện
@@ -1258,7 +1327,6 @@ function setupDonateQrEffect() {
       saveGalleryStore();
       refreshAlbum();
       renderMessages(galleryStore.messages);
-      showDataSaveHint();
   }
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
@@ -1421,7 +1489,7 @@ function setupDonateQrEffect() {
             }
         }
     } catch (err) { console.warn('Bỏ qua khôi phục backup cục bộ:', err); }
-    if (galleryDataDirty) showDataSaveHint();
+    if (galleryDataDirty) syncDataToFile();
   });
 
   function setupThemeToggle() {
