@@ -36,6 +36,7 @@
             animation: fadeIn 0.6s ease-out forwards;
         }
         .delay-100 { animation-delay: 0.1s; }
+        .delay-150 { animation-delay: 0.15s; }
         .delay-300 { animation-delay: 0.3s; }
         html.dark-theme,
         body.dark-theme {
@@ -263,16 +264,6 @@
         .video-preview-card:focus-within .video-frame {
             filter: brightness(1.05);
         }
-        .video-open-link {
-            opacity: 0.8;
-            transform: translateY(4px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        .video-preview-card:hover .video-open-link,
-        .video-preview-card:focus-within .video-open-link {
-            opacity: 1;
-            transform: translateY(0);
-        }
         .album-pop-card {
             min-height: 112px;
         }
@@ -339,12 +330,6 @@
         #messagesList {
             position: relative;
             z-index: 50;
-        }
-        .local-video-note {
-            display: none;
-        }
-        body.local-file .local-video-note {
-            display: block;
         }
         @media (max-width: 640px) {
             main {
@@ -777,6 +762,8 @@ const fallbackAlbumImages = {
 };
 
 let selectedImageBase64 = null;
+// Giới hạn dung lượng mỗi ảnh lời nhắn (nén) để bin jsonbin.io bản Free (~100KB) chứa được nhiều ảnh hơn
+const MAX_IMAGE_BYTES = 30 * 1024;
 
 function setAlbumImages(albums) {
     albumImages = {
@@ -811,20 +798,27 @@ function updateAlbumCountBadges() {
 }
 
 async function loadAlbumImages() {
+    if (loadAlbumImages.inFlight) return loadAlbumImages.inFlight;
     if (allGalleryImages.length === 0) setAlbumImages(fallbackAlbumImages);
     if (window.location.protocol === 'file:') return;
-    const response = await fetch('/api/albums', { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Album API failed: ${response.status}`);
-    const albums = await response.json();
-    setAlbumImages(albums);
-    const albumModal = document.getElementById('albumModal');
-    if (albumModal && !albumModal.classList.contains('hidden')) {
-        activeAlbumImages = activeAlbumLabel === 'Ảnh hậu trường'
-            ? albumImages.bts
-            : albumImages.albummeme;
-        renderAlbumItems(activeAlbumImages, activeAlbumLabel);
-    }
+    loadAlbumImages.inFlight = (async () => {
+        const response = await fetch('/api/albums', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Album API failed: ${response.status}`);
+        const albums = await response.json();
+        setAlbumImages(albums);
+        const albumModal = document.getElementById('albumModal');
+        if (albumModal && !albumModal.classList.contains('hidden')) {
+            activeAlbumImages = activeAlbumLabel === 'Ảnh hậu trường'
+                ? albumImages.bts
+                : albumImages.albummeme;
+            renderAlbumItems(activeAlbumImages, activeAlbumLabel);
+        }
+    })().finally(() => {
+        loadAlbumImages.inFlight = null;
+    });
+    return loadAlbumImages.inFlight;
 }
+loadAlbumImages.inFlight = null;
 
 function previewSelectedImage(input) {
     if (input.files && input.files[0]) {
@@ -861,11 +855,11 @@ function previewImageFile(file) {
                   if (label) label.innerText = 'Không nén được ảnh';
                   return;
               }
-              if (blob.size > 45 * 1024 && quality > 0.25) {
+              if (blob.size > MAX_IMAGE_BYTES && quality > 0.25) {
                   readCompressedImage(quality - 0.1);
                   return;
               }
-              if (blob.size > 45 * 1024 && resizeAttempts < 3) {
+              if (blob.size > MAX_IMAGE_BYTES && resizeAttempts < 3) {
                   canvas.width = Math.max(1, Math.round(canvas.width * 0.8));
                   canvas.height = Math.max(1, Math.round(canvas.height * 0.8));
                   canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -960,10 +954,7 @@ function setupDonateQrEffect() {
      qrImage.classList.remove('is-visible');
  };
 
- group.addEventListener('mouseenter', () => {
-     group.classList.add('is-active');
-     showQr();
- });
+ group.addEventListener('mouseenter', showQr);
  group.addEventListener('mouseleave', hideQr);
  group.addEventListener('focusin', showQr);
  group.addEventListener('focusout', hideQr);
@@ -991,14 +982,15 @@ function setupDonateQrEffect() {
       };
   }
 
-  // ==================== LƯU DỮ LIỆU: CHẾ ĐỘ SERVER TỰ ĐỘNG (HOẶC FILE OFFLINE) ====================
-  // - Khi trang được phục vụ bởi server.js (mini PC trong nhà):
-  //     MỌI lời nhắn / lượt yêu thích TỰ ĐỘNG ghi vào data.js trong thư mục dự án trên máy chủ.
-  // - Khi mở thẳng file:// (không có server):
-  //     Dùng File System Access API tự lưu vào data.js, hoặc tải thủ công.
+  // ==================== LƯU DỮ LIỆU: SERVER / JSONBIN.IO / FILE OFFLINE ====================
+  // Thứ tự ưu tiên khi lưu lời nhắn & lượt yêu thích:
+  //   1) server.js (mini PC trong nhà)  → ghi vào data.js trên máy chủ.
+  //   2) jsonbin.io (đã cấu hình)        → đồng bộ trực tuyến.
+  //   3) file:// không có server/cloud  → File System Access API lưu data.js, hoặc tải thủ công.
   const AUTO_FILE_NAME = 'data.js';
   let autoSaveQueue = Promise.resolve();
   let isServerMode = false;
+  let pendingSaves = 0;
 
   // Lưu toàn bộ dữ liệu lên server rồi đồng bộ về (chỉ chạy khi do server phục vụ)
   async function syncToServer() {
@@ -1023,13 +1015,91 @@ function setupDonateQrEffect() {
           const data = await res.json();
           galleryStore = normalizeGalleryStore(data);
           isServerMode = true;
-          // Render dữ liệu lấy từ server ngay khi load xong
-          renderMessages(galleryStore.messages);
-          renderTopRated();
-          renderMessageTopRated(galleryStore.messages);
           return true;
       } catch (err) {
           return false;
+      }
+  }
+
+  // ==================== ĐỒNG BỘ TRỰC TUYẾN QUA JSONBIN.IO ====================
+  // Lời nhắn (kèm ảnh base64) và lượt yêu thích được lưu trên jsonbin.io để mọi
+  // thiết bị dùng chung một nguồn dữ liệu trực tuyến.
+  // Lưu ý: bin bản Free của jsonbin.io chỉ chứa tối đa khoảng 100KB (Pro: 10MB).
+  const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
+  const JSONBIN_MASTER_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6';
+  const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3/b';
+  let isCloudMode = false;
+
+  // Đọc dữ liệu mới nhất từ jsonbin.io
+  async function fetchFromJsonBin() {
+      const res = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_MASTER_KEY },
+          cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('JSONBin đọc thất bại: ' + res.status);
+      const payload = await res.json();
+      return normalizeGalleryStore(payload && payload.record ? payload.record : payload);
+  }
+
+  // Ghi toàn bộ galleryStore lên jsonbin.io
+  async function syncToJsonBin() {
+      const res = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': JSONBIN_MASTER_KEY
+          },
+          body: JSON.stringify(galleryStore)
+      });
+      if (!res.ok) throw new Error('JSONBin ghi thất bại: ' + res.status);
+      const payload = await res.json();
+      galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
+      renderMessages(galleryStore.messages);
+      renderTopRated();
+      renderMessageTopRated(galleryStore.messages);
+      showAutoSaveToast('✓ Đã đồng bộ lên jsonbin.io', true);
+  }
+
+  // Đọc từ jsonbin.io kèm thử lại vài lần để chịu được lỗi mạng tạm thời
+  async function fetchFromJsonBinWithRetry(attempts) {
+      let lastErr;
+      for (let i = 0; i < attempts; i += 1) {
+          try {
+              return await fetchFromJsonBin();
+          } catch (err) {
+              lastErr = err;
+              await new Promise(resolve => setTimeout(resolve, 700 * (i + 1)));
+          }
+      }
+      throw lastErr;
+  }
+
+  // Thử đọc từ jsonbin.io lúc tải trang; thành công thì bật chế độ cloud
+  async function detectCloudMode() {
+      if (!JSONBIN_BIN_ID) return false;
+      galleryStore = await fetchFromJsonBinWithRetry(3);
+      isCloudMode = true;
+      renderMessages(galleryStore.messages);
+      renderTopRated();
+      renderMessageTopRated(galleryStore.messages);
+      return true;
+  }
+
+  // Làm mới dữ liệu từ cloud (gọi khi quay lại tab) nếu có thay đổi từ thiết bị khác
+  async function refreshFromCloud() {
+      if (isServerMode || !isCloudMode || pendingSaves > 0) return;
+      try {
+          const remote = await fetchFromJsonBin();
+          if (JSON.stringify(remote.messages) !== JSON.stringify(galleryStore.messages)
+              || JSON.stringify(remote.ratings) !== JSON.stringify(galleryStore.ratings)) {
+              galleryStore = remote;
+              isCloudMode = true;
+              renderMessages(galleryStore.messages);
+              renderTopRated();
+              renderMessageTopRated(galleryStore.messages);
+          }
+      } catch (err) {
+          console.warn('Không làm mới được dữ liệu từ jsonbin.io:', err);
       }
   }
 
@@ -1141,24 +1211,29 @@ function setupDonateQrEffect() {
       try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
   }
 
-  // Lưu dữ liệu: server (mọi thứ tự động) nếu có server, nếu không thì dùng file offline
+  // Lưu dữ liệu: server (nếu có) → jsonbin.io trực tuyến → file offline
   function saveGalleryStore() {
       galleryDataDirty = true;
       try {
           localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore));
           sessionStorage.setItem('giang_session_dirty', '1');
       } catch (err) { console.warn('Không lưu được bản backup cục bộ:', err); }
+      pendingSaves += 1;
       const task = autoSaveQueue.then(() => {
-          return isServerMode ? syncToServer() : syncDataToFile();
+          if (isServerMode) return syncToServer();
+          // Chỉ ghi lên cloud khi đã đọc được dữ liệu cloud (tránh ghi đè khi mất kết nối)
+          if (isCloudMode) return syncToJsonBin();
+          return syncDataToFile();
       }).catch(err => {
           console.warn('Lưu dữ liệu thất bại:', err);
           if (isServerMode) showAutoSaveToast('Không gửi được lên server', false);
-      });
+          else if (isCloudMode) showAutoSaveToast('Không đồng bộ được lên jsonbin.io', false);
+      }).finally(() => { pendingSaves = Math.max(0, pendingSaves - 1); });
       autoSaveQueue = task.catch(() => {});
       return autoSaveQueue;
   }
 
-  // 2. Gửi lời nhắn mới (lưu trực tiếp vào dữ liệu nội bộ, không qua bên thứ 3)
+  // 2. Gửi lời nhắn mới (server sẽ lưu local và đồng bộ tiếp lên JSONBin)
   function handleGuestbookSubmit(e) {
       e.preventDefault();
       const nameInput = document.getElementById('guestName');
@@ -1429,7 +1504,7 @@ function setupDonateQrEffect() {
     currentIndex = allGalleryImages.indexOf(imgSrc);
     
     const modalImg = document.getElementById('modalImg');
-    if(modalImg) modalImg.src = currentIndex !== -1 ? allGalleryImages[currentIndex] : imgSrc;
+    if(modalImg) modalImg.src = imgSrc;
     
     const imgModal = document.getElementById('imageModal');
     if(imgModal) {
@@ -1493,9 +1568,7 @@ function setupDonateQrEffect() {
     setupImageDropZone();
     setupDonateQrEffect();
     setupAvatarPopup();
-    if (window.location.protocol === 'file:') {
-        document.body.classList.add('local-file');
-    } else {
+    if (window.location.protocol !== 'file:') {
         const youtubeFrame = document.querySelector('iframe[title="Video Hoa hậu sinh viên"]');
         if (youtubeFrame) {
             const url = new URL(youtubeFrame.src);
@@ -1503,6 +1576,11 @@ function setupDonateQrEffect() {
             youtubeFrame.src = url.toString();
         }
     }
+
+    // Khi quay lại tab, làm mới lời nhắn/lượt thích từ jsonbin.io để đồng bộ giữa các thiết bị
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshFromCloud();
+    });
 
     updateAlbumCountBadges();
     // Cập nhật lượt truy cập theo từng trình duyệt.
@@ -1518,7 +1596,16 @@ function setupDonateQrEffect() {
         if (await detectServerMode()) {
             return;
         }
-        // 2) Không có server → dữ liệu lấy từ data.js trong cùng thư mục (mở file://)
+        // 2) Nếu đã cấu hình jsonbin.io → đồng bộ trực tuyến lời nhắn + ảnh
+        try {
+            if (await detectCloudMode()) {
+                return;
+            }
+        } catch (err) {
+            console.warn('Không đọc được dữ liệu từ jsonbin.io, dùng dữ liệu cục bộ:', err);
+            showAutoSaveToast('⚠ Chưa kết nối được jsonbin.io — đang dùng dữ liệu cục bộ', false);
+        }
+        // 3) Không có server & cloud → dữ liệu lấy từ data.js trong cùng thư mục (mở file://)
         fetchMessagesFromLocalData();
         try {
             const DirtyFlag = sessionStorage.getItem('giang_session_dirty') === '1';
