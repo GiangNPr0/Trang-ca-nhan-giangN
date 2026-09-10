@@ -991,11 +991,47 @@ function setupDonateQrEffect() {
       };
   }
 
-  // ==================== TỰ ĐỘNG LƯU VÀO FILE data.js ====================
-  // Dùng "File System Access API": lần đầu trang xin quyền ghi đè file data.js
-  // (1 lần duy nhất), sau đó MỌI lời nhắn / lượt yêu thích được tự động ghi vào file.
+  // ==================== LƯU DỮ LIỆU: CHẾ ĐỘ SERVER TỰ ĐỘNG (HOẶC FILE OFFLINE) ====================
+  // - Khi trang được phục vụ bởi server.js (mini PC trong nhà):
+  //     MỌI lời nhắn / lượt yêu thích TỰ ĐỘNG ghi vào data.js trong thư mục dự án trên máy chủ.
+  // - Khi mở thẳng file:// (không có server):
+  //     Dùng File System Access API tự lưu vào data.js, hoặc tải thủ công.
   const AUTO_FILE_NAME = 'data.js';
   let autoSaveQueue = Promise.resolve();
+  let isServerMode = false;
+
+  // Lưu toàn bộ dữ liệu lên server rồi đồng bộ về (chỉ chạy khi do server phục vụ)
+  async function syncToServer() {
+      const res = await fetch('/api/data', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(galleryStore)
+      });
+      if (!res.ok) throw new Error('Server /api/data thất bại: ' + res.status);
+      galleryStore = normalizeGalleryStore(await res.json());
+      renderMessages(galleryStore.messages);
+      renderTopRated();
+      renderMessageTopRated(galleryStore.messages);
+      showAutoSaveToast('✓ Đã lưu lên server', true);
+  }
+
+  // Thử kết nối server; nếu có thì chuyển sang chế độ tự động hoàn toàn
+  async function detectServerMode() {
+      try {
+          const res = await fetch('/api/data', { cache: 'no-store' });
+          if (!res.ok) return false;
+          const data = await res.json();
+          galleryStore = normalizeGalleryStore(data);
+          isServerMode = true;
+          // Render dữ liệu lấy từ server ngay khi load xong
+          renderMessages(galleryStore.messages);
+          renderTopRated();
+          renderMessageTopRated(galleryStore.messages);
+          return true;
+      } catch (err) {
+          return false;
+      }
+  }
 
   function openHandleStore() {
       return new Promise((resolve, reject) => {
@@ -1105,15 +1141,21 @@ function setupDonateQrEffect() {
       try { sessionStorage.removeItem('giang_session_dirty'); } catch (err) {}
   }
 
-  // Lưu dữ liệu mới nhất: backup cục bộ + tự động ghi đè file data.js
+  // Lưu dữ liệu: server (mọi thứ tự động) nếu có server, nếu không thì dùng file offline
   function saveGalleryStore() {
       galleryDataDirty = true;
       try {
           localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore));
           sessionStorage.setItem('giang_session_dirty', '1');
       } catch (err) { console.warn('Không lưu được bản backup cục bộ:', err); }
-      syncDataToFile();
-      return Promise.resolve();
+      const task = autoSaveQueue.then(() => {
+          return isServerMode ? syncToServer() : syncDataToFile();
+      }).catch(err => {
+          console.warn('Lưu dữ liệu thất bại:', err);
+          if (isServerMode) showAutoSaveToast('Không gửi được lên server', false);
+      });
+      autoSaveQueue = task.catch(() => {});
+      return autoSaveQueue;
   }
 
   // 2. Gửi lời nhắn mới (lưu trực tiếp vào dữ liệu nội bộ, không qua bên thứ 3)
@@ -1471,25 +1513,31 @@ function setupDonateQrEffect() {
     const visitEl = document.getElementById('visitCount');
     if (visitEl) visitEl.innerText = visits.toLocaleString('vi-VN');
 
-    fetchMessagesFromLocalData();
-    // Khôi phục dữ liệu đã thay đổi trong phiên này (nếu có) để tránh mất lời nhắn mới khi F5
-    try {
-        const DirtyFlag = sessionStorage.getItem('giang_session_dirty') === '1';
-        const backup = localStorage.getItem('giang_site_data_backup');
-        if (DirtyFlag && backup && window.SITE_DATA) {
-            const parsed = JSON.parse(backup);
-            const merged = normalizeGalleryStore(parsed);
-            if (JSON.stringify(merged.messages) !== JSON.stringify(galleryStore.messages)
-                || JSON.stringify(merged.ratings) !== JSON.stringify(galleryStore.ratings)) {
-                galleryStore = merged;
-                galleryDataDirty = true;
-                renderMessages(galleryStore.messages);
-                renderTopRated();
-                renderMessageTopRated(galleryStore.messages);
-            }
+    (async function initDataLoader() {
+        // 1) Nếu đang được server.js (mini PC) phục vụ → tự động đồng bộ, gửi nhận đều lên server
+        if (await detectServerMode()) {
+            return;
         }
-    } catch (err) { console.warn('Bỏ qua khôi phục backup cục bộ:', err); }
-    if (galleryDataDirty) syncDataToFile();
+        // 2) Không có server → dữ liệu lấy từ data.js trong cùng thư mục (mở file://)
+        fetchMessagesFromLocalData();
+        try {
+            const DirtyFlag = sessionStorage.getItem('giang_session_dirty') === '1';
+            const backup = localStorage.getItem('giang_site_data_backup');
+            if (DirtyFlag && backup && window.SITE_DATA) {
+                const parsed = JSON.parse(backup);
+                const merged = normalizeGalleryStore(parsed);
+                if (JSON.stringify(merged.messages) !== JSON.stringify(galleryStore.messages)
+                    || JSON.stringify(merged.ratings) !== JSON.stringify(galleryStore.ratings)) {
+                    galleryStore = merged;
+                    galleryDataDirty = true;
+                    renderMessages(galleryStore.messages);
+                    renderTopRated();
+                    renderMessageTopRated(galleryStore.messages);
+                }
+            }
+        } catch (err) { console.warn('Bỏ qua khôi phục backup cục bộ:', err); }
+        if (galleryDataDirty) syncDataToFile();
+    })();
   });
 
   function setupThemeToggle() {
