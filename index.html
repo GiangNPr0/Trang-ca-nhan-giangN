@@ -606,7 +606,10 @@
         <div id="googleSignedIn" class="hidden items-center gap-2">
             <img id="googleAvatar" src="" alt="" class="w-9 h-9 rounded-full border border-gray-200 shadow-sm object-cover">
             <div class="min-w-0 flex-1">
-                <div class="text-sm font-semibold text-gray-800 truncate" id="googleUserName"></div>
+                <div class="text-sm font-semibold text-gray-800 truncate flex items-center gap-1">
+                    <span id="googleUserName"></span>
+                    <span id="googleAdminBadge" class="hidden text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">ADMIN</span>
+                </div>
                 <div class="text-[11px] text-emerald-600 flex items-center gap-1">
                     <i class="ph-fill ph-check-circle"></i> Đã đăng nhập Google
                 </div>
@@ -899,7 +902,10 @@ async function uploadToCloudinary(blob) {
       throw new Error('Chưa cấu hình Cloudinary (cloud name / upload preset)');
   }
   const formData = new FormData();
-  formData.append('file', blob, 'loi-nhan.jpg');
+  // Tên file DUY NHẤT cho mỗi ảnh. Nếu dùng cùng tên, Cloudinary sẽ dùng cùng public_id
+  // và GHI ĐÈ ảnh cũ → mọi lời nhắn sẽ trỏ về cùng một ảnh.
+  const uniqueName = 'loi-nhan-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+  formData.append('file', blob, uniqueName);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   if (CLOUDINARY_FOLDER) formData.append('folder', CLOUDINARY_FOLDER);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
@@ -1310,6 +1316,14 @@ function setupDonateQrEffect() {
       return !!GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.indexOf('thay-bang') !== 0;
   }
 
+  // ==================== QUYỀN ADMIN (SỬA / XOÁ LỜI NHẮN) ====================
+  // Thêm email Google của quản trị viên vào danh sách này
+  const ADMIN_EMAILS = ['n.giang06022000@gmail.com'];
+  function isAdmin() {
+      return !!(googleUser && googleUser.email &&
+          ADMIN_EMAILS.indexOf(String(googleUser.email).toLowerCase()) !== -1);
+  }
+
   // Giải mã payload của ID token (JWT) do Google trả về
   function decodeJwtPayload(token) {
       try {
@@ -1349,7 +1363,8 @@ function setupDonateQrEffect() {
       };
       saveGoogleUser(googleUser);
       updateGoogleAuthUI();
-      showAutoSaveToast('✓ Đã đăng nhập: ' + googleUser.name, true);
+      renderMessages(galleryStore.messages);
+      showAutoSaveToast('✓ Đã đăng nhập: ' + googleUser.name + (isAdmin() ? ' (Admin)' : ''), true);
   }
 
   function googleSignOut() {
@@ -1357,6 +1372,7 @@ function setupDonateQrEffect() {
       googleUser = null;
       saveGoogleUser(null);
       updateGoogleAuthUI();
+      renderMessages(galleryStore.messages);
   }
 
   // Cập nhật giao diện theo trạng thái đăng nhập
@@ -1388,6 +1404,8 @@ function setupDonateQrEffect() {
           if (avatar) avatar.src = googleUser.picture || '';
           if (userName) userName.innerText = googleUser.name;
           if (nameInput) { nameInput.value = googleUser.name; nameInput.readOnly = true; }
+          const adminBadge = document.getElementById('googleAdminBadge');
+          if (adminBadge) adminBadge.classList.toggle('hidden', !isAdmin());
       } else if (nameInput) {
           nameInput.readOnly = false;
       }
@@ -1492,7 +1510,7 @@ function setupDonateQrEffect() {
       }
 
       listEl.innerHTML = messages.map((item, index) => `
-        <div class="message-item bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 flex flex-col gap-1">
+        <div class="message-item bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100 flex flex-col gap-1" data-message-index="${index}">
             <div class="flex items-center justify-between">
                 <span class="message-name font-bold text-sm text-gray-800 flex items-center gap-1.5">
                     ${isSafeAvatarUrl(item.avatar)
@@ -1511,6 +1529,12 @@ function setupDonateQrEffect() {
                         <i class="${hasFavorite(item.image) ? 'ph-fill' : 'ph'} ph-heart"></i>
                         ${getRating(item.image).favorites} ${hasFavorite(item.image) ? 'Bỏ yêu thích' : 'Yêu thích'}
                     </button>
+                </div>
+            ` : ''}
+            ${isAdmin() ? `
+                <div class="flex items-center gap-3 mt-1 pl-6">
+                    <button type="button" data-msg-edit="${index}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"><i class="ph ph-pencil-simple"></i> Sửa</button>
+                    <button type="button" data-msg-delete="${index}" class="text-xs font-semibold text-red-500 hover:text-red-600 flex items-center gap-1"><i class="ph ph-trash"></i> Xóa</button>
                 </div>
             ` : ''}
         </div>
@@ -1539,7 +1563,71 @@ function setupDonateQrEffect() {
           const image = messages[Number.parseInt(button.dataset.messageFavoriteIndex, 10)]?.image;
           if (image) button.addEventListener('click', () => toggleFavorite(image));
       });
+      listEl.querySelectorAll('[data-msg-edit]').forEach(button => {
+          button.addEventListener('click', () => startEditMessage(Number.parseInt(button.dataset.msgEdit, 10)));
+      });
+      listEl.querySelectorAll('[data-msg-delete]').forEach(button => {
+          button.addEventListener('click', () => deleteMessage(Number.parseInt(button.dataset.msgDelete, 10)));
+      });
       renderMessageTopRated(messages);
+  }
+
+  // ==================== ADMIN: SỬA / XOÁ LỜI NHẮN ====================
+  function deleteMessage(index) {
+      if (!isAdmin()) return;
+      const item = galleryStore.messages[index];
+      if (!item) return;
+      if (!window.confirm('Xoá lời nhắn này?')) return;
+      galleryStore.messages.splice(index, 1);
+      saveGalleryStore();
+      renderMessages(galleryStore.messages);
+      renderMessageTopRated(galleryStore.messages);
+      showAutoSaveToast('🗑 Đã xoá lời nhắn', true);
+  }
+
+  function startEditMessage(index) {
+      if (!isAdmin()) return;
+      const item = galleryStore.messages[index];
+      if (!item) return;
+      const itemEl = document.querySelector('.message-item[data-message-index="' + index + '"]');
+      const contentEl = itemEl ? itemEl.querySelector('.message-content') : null;
+      if (!contentEl) return;
+
+      const editor = document.createElement('div');
+      editor.className = 'pl-6 mt-1 space-y-1';
+      const textarea = document.createElement('textarea');
+      textarea.rows = 2;
+      textarea.value = item.message || '';
+      textarea.className = 'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 bg-gray-50/50';
+      const bar = document.createElement('div');
+      bar.className = 'flex gap-2';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg';
+      saveBtn.textContent = 'Lưu';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'text-xs font-semibold bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg';
+      cancelBtn.textContent = 'Huỷ';
+      bar.appendChild(saveBtn);
+      bar.appendChild(cancelBtn);
+      editor.appendChild(textarea);
+      editor.appendChild(bar);
+      contentEl.style.display = 'none';
+      contentEl.parentNode.insertBefore(editor, contentEl.nextSibling);
+      textarea.focus();
+
+      const closeEditor = () => { editor.remove(); contentEl.style.display = ''; };
+      cancelBtn.addEventListener('click', closeEditor);
+      saveBtn.addEventListener('click', () => {
+          const value = textarea.value.trim();
+          if (!value) { closeEditor(); return; }
+          item.message = value;
+          saveGalleryStore();
+          renderMessages(galleryStore.messages);
+          renderMessageTopRated(galleryStore.messages);
+          showAutoSaveToast('✏️ Đã cập nhật lời nhắn', true);
+      });
   }
 
   function escapeHtml(text) {
