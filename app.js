@@ -388,7 +388,9 @@ function setupDonateQrEffect() {
   // thiết bị dùng chung một nguồn dữ liệu trực tuyến.
   // Lưu ý: bin bản Free của jsonbin.io chỉ chứa tối đa khoảng 100KB (Pro: 10MB).
   const JSONBIN_BIN_ID = '6a9fd4f2ac6210605ab2e044';
-  const JSONBIN_MASTER_KEY = '$2a$10$hXq/0pltSrgzHj5q.wP4rOeA8YdsVcWqhkJ7mUrQcy.1QTbLRr1w6';
+  // ĐÃ XOÁ khoá khỏi web (mục #9): mọi đọc/ghi đều đi qua Worker proxy ở trên,
+  // khoá master chỉ nằm trong Cloudflare Secret của Worker → người mở web không thể lấy được.
+  const JSONBIN_MASTER_KEY = '';
   const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3/b';
   let isCloudMode = false;
 
@@ -404,7 +406,7 @@ function setupDonateQrEffect() {
   //   • Admin sửa/xoá : POST <proxy>/admin     (kèm ID token, server kiểm tra đúng email admin)
   // Sau khi proxy chạy ổn, có thể đặt JSONBIN_MASTER_KEY = '' để khoá biến mất hoàn toàn khỏi web.
   // Để trống '' = chưa deploy → trang chạy y như cũ (dùng khoá trực tiếp).
-  const JSONBIN_PROXY_URL = '';
+  const JSONBIN_PROXY_URL = 'https://giangn.n-giang06022000.workers.dev';
   function useProxy() { return !!JSONBIN_PROXY_URL; }
   let googleIdToken = null;   // ID token Google (JWT ~1 giờ) để proxy xác thực người gửi
 
