@@ -785,11 +785,17 @@ let selectedImageSource = null;
 // >>> ĐIỀN 2 GIÁ TRỊ DƯỚI ĐÂY bằng thông tin trong dashboard Cloudinary của bạn <<<
 const CLOUDINARY_CLOUD_NAME = 'g9uxwrbl';
 const CLOUDINARY_UPLOAD_PRESET = 'GiangNweb';
-const CLOUDINARY_FOLDER = 'giang-loi-nhan';
+const CLOUDINARY_FOLDER = 'Loi-nhan';
 const IMAGE_MAX_DIMENSION = 1280;
 const IMAGE_MAX_BYTES = 400 * 1024;
-// Folder Cloudinary cho từng album (đổi tên nếu folder bạn tạo trên Cloudinary khác)
+// Folder Cloudinary cho từng album — ghi ĐÚNG chữ thường như Folder trong preset ("bts" / "albummeme").
+// Ghi chú: 2 preset album đã cố định Folder nên Cloudinary BỎ QUA tham số folder/asset_folder gửi kèm;
+// giữ đúng tên ở đây để nếu preset chuyển sang chế độ dynamic thì ảnh vẫn vào đúng folder.
 const CLOUDINARY_ALBUM_FOLDERS = { bts: 'bts', albummeme: 'albummeme' };
+// Preset riêng cho từng album (mỗi preset cố định Folder trong dashboard Cloudinary).
+// Tạo preset: Settings → Upload → Add upload preset, Signing Mode = Unsigned, Folder = bts / albummeme.
+// Để trống '' = dùng chung CLOUDINARY_UPLOAD_PRESET.
+const CLOUDINARY_ALBUM_PRESETS = { bts: 'GiangNweb_bts', albummeme: 'GiangNweb_album' };
 // Ảnh album: giữ chất lượng cao hơn ảnh lời nhắn
 const ALBUM_IMAGE_MAX_DIMENSION = 1600;
 const ALBUM_IMAGE_MAX_BYTES = 1024 * 1024;
@@ -808,7 +814,12 @@ function setAlbumImages(albums) {
         const images = albumImages[image.dataset.albumCover];
         const src = images?.[Number.parseInt(image.dataset.coverIndex, 10)];
         if (src) { image.style.visibility = ''; image.src = src; }
-        image.onerror = () => { image.style.visibility = 'hidden'; };
+        // Chỉ ẩn ảnh bìa khi CHÍNH ảnh đang hiển thị bị lỗi. Nếu ảnh đặt sẵn trong HTML (ảnh cục bộ)
+        // báo lỗi sau khi đã đổi sang ảnh Cloudinary, sự kiện error của ảnh cũ sẽ bị bỏ qua.
+        image.onerror = () => {
+            const shown = src || image.getAttribute('src');
+            if (image.getAttribute('src') === shown) image.style.visibility = 'hidden';
+        };
     });
     updateAlbumCountBadges();
 }
@@ -899,7 +910,7 @@ function compressImage(file, maxDimension, maxBytes) {
 }
 
 // Tải ảnh lên Cloudinary bằng unsigned upload preset, trả về URL ảnh
-async function uploadToCloudinary(blob, folder, namePrefix) {
+async function uploadToCloudinary(blob, folder, namePrefix, presetName) {
   if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME.indexOf('thay-bang') === 0 ||
       !CLOUDINARY_UPLOAD_PRESET || CLOUDINARY_UPLOAD_PRESET.indexOf('thay-bang') === 0) {
       throw new Error('Chưa cấu hình Cloudinary (cloud name / upload preset)');
@@ -910,9 +921,11 @@ async function uploadToCloudinary(blob, folder, namePrefix) {
   const prefix = namePrefix || 'loi-nhan';
   const uniqueName = prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
   formData.append('file', blob, uniqueName);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('upload_preset', presetName || CLOUDINARY_UPLOAD_PRESET);
   const targetFolder = folder === undefined ? CLOUDINARY_FOLDER : folder;
-  if (targetFolder) formData.append('folder', targetFolder);
+  // Gửi cả 'folder' và 'asset_folder' (Cloudinary có 2 chế độ folder: dynamic/fixed).
+  // LƯU Ý: nếu preset đã cố định Folder thì các tham số này bị BỎ QUA — khi đó cần preset riêng cho mỗi folder.
+  if (targetFolder) { formData.append('folder', targetFolder); formData.append('asset_folder', targetFolder); }
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
       method: 'POST',
       body: formData
@@ -1332,8 +1345,8 @@ function setupDonateQrEffect() {
   }
 
   // ==================== QUYỀN ADMIN (SỬA / XOÁ LỜI NHẮN) ====================
-  // Thêm email Google của quản trị viên vào danh sách này
-  const ADMIN_EMAILS = ['n.giang06022000@gmail.com'];
+  // Thêm email Google của quản trị viên vào danh sách này (viết CHỮ THƯỜNG, đúng như email Google trả về)
+  const ADMIN_EMAILS = ['n.giang06022000@gmail.com', 'bichngocng1908@gmail.com'];
   function isAdmin() {
       return !!(googleUser && googleUser.email &&
           ADMIN_EMAILS.indexOf(String(googleUser.email).toLowerCase()) !== -1);
@@ -1784,6 +1797,7 @@ function setupDonateQrEffect() {
 
       const albumKey = activeAlbumLabel === 'Ảnh hậu trường' ? 'bts' : 'albummeme';
       const folder = CLOUDINARY_ALBUM_FOLDERS[albumKey];
+      const preset = CLOUDINARY_ALBUM_PRESETS[albumKey] || CLOUDINARY_UPLOAD_PRESET;
       const statusEl = document.getElementById('albumUploadStatus');
 
       if (!galleryStore.albums) galleryStore.albums = { bts: [], albummeme: [] };
@@ -1794,7 +1808,7 @@ function setupDonateQrEffect() {
           if (statusEl) statusEl.innerText = `Đang tải ${i + 1}/${imageFiles.length}...`;
           try {
               const blob = await compressImage(imageFiles[i], ALBUM_IMAGE_MAX_DIMENSION, ALBUM_IMAGE_MAX_BYTES);
-              const url = await uploadToCloudinary(blob, folder, albumKey);
+              const url = await uploadToCloudinary(blob, folder, albumKey, preset);
               galleryStore.albums[albumKey].push(url);
               ok += 1;
           } catch (err) {
