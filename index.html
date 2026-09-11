@@ -715,14 +715,24 @@
 <!-- Modal: Grid Album Chung -->
 <div id="albumModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
     <div class="bg-surface w-full sm:max-w-2xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <div class="flex items-center gap-2">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2 bg-gray-50/50">
+            <div class="flex items-center gap-2 min-w-0">
                 <i class="ph-fill ph-images text-blue-600 text-xl"></i>
-                <h3 id="albumModalTitle" class="font-bold text-lg text-gray-900">Bộ sưu tập ảnh</h3>
+                <h3 id="albumModalTitle" class="font-bold text-lg text-gray-900 truncate">Bộ sưu tập ảnh</h3>
             </div>
-            <button type="button" onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors" aria-label="Đóng album">
-                <i class="ph ph-x text-lg"></i>
-            </button>
+            <div class="flex items-center gap-1 shrink-0">
+                <!-- Công cụ admin: tải ảnh lên album -->
+                <div id="albumAdminTools" class="hidden items-center gap-1">
+                    <input type="file" id="albumUploadInput" accept="image/*" multiple class="hidden" onchange="handleAlbumUpload(this)">
+                    <button type="button" onclick="document.getElementById('albumUploadInput').click()" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
+                        <i class="ph ph-upload-simple"></i> Tải ảnh lên
+                    </button>
+                    <span id="albumUploadStatus" class="text-[11px] text-gray-400"></span>
+                </div>
+                <button type="button" onclick="closeAlbumModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors" aria-label="Đóng album">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
         </div>
         <div class="p-4 sm:p-6 overflow-y-auto">
             <div id="albumGridList" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
@@ -778,23 +788,38 @@ const CLOUDINARY_UPLOAD_PRESET = 'GiangNweb';
 const CLOUDINARY_FOLDER = 'giang-loi-nhan';
 const IMAGE_MAX_DIMENSION = 1280;
 const IMAGE_MAX_BYTES = 400 * 1024;
+// Folder Cloudinary cho từng album (đổi tên nếu folder bạn tạo trên Cloudinary khác)
+const CLOUDINARY_ALBUM_FOLDERS = { bts: 'bts', albummeme: 'albummeme' };
+// Ảnh album: giữ chất lượng cao hơn ảnh lời nhắn
+const ALBUM_IMAGE_MAX_DIMENSION = 1600;
+const ALBUM_IMAGE_MAX_BYTES = 1024 * 1024;
 
 function setAlbumImages(albums) {
-    albumImages = {
-        bts: Array.isArray(albums.bts) ? albums.bts : fallbackAlbumImages.bts,
-        albummeme: Array.isArray(albums.albummeme) ? albums.albummeme : fallbackAlbumImages.albummeme
-    };
+    const source = albums || {};
+    // Nếu album trên cloud còn rỗng thì dùng ảnh cục bộ làm mặc định
+    const btsList = Array.isArray(source.bts) && source.bts.length ? source.bts : fallbackAlbumImages.bts;
+    const memeList = Array.isArray(source.albummeme) && source.albummeme.length ? source.albummeme : fallbackAlbumImages.albummeme;
+    albumImages = { bts: btsList, albummeme: memeList };
     totalBtsImages = albumImages.bts.length;
     totalMemeImages = albumImages.albummeme.length;
     allGalleryImages = [...albumImages.bts, ...albumImages.albummeme];
 
     document.querySelectorAll('[data-album-cover]').forEach(image => {
         const images = albumImages[image.dataset.albumCover];
-        const source = images?.[Number.parseInt(image.dataset.coverIndex, 10)];
-        if (source) image.src = source;
+        const src = images?.[Number.parseInt(image.dataset.coverIndex, 10)];
+        if (src) { image.style.visibility = ''; image.src = src; }
         image.onerror = () => { image.style.visibility = 'hidden'; };
     });
     updateAlbumCountBadges();
+}
+
+// Cập nhật lại lưới ảnh nếu modal album đang mở (sau khi đồng bộ cloud hoặc tải/xoá ảnh)
+function refreshOpenAlbumModal() {
+    const albumModal = document.getElementById('albumModal');
+    if (albumModal && !albumModal.classList.contains('hidden')) {
+        activeAlbumImages = activeAlbumLabel === 'Ảnh hậu trường' ? albumImages.bts : albumImages.albummeme;
+        renderAlbumItems(activeAlbumImages, activeAlbumLabel);
+    }
 }
 
 function updateAlbumCountBadges() {
@@ -812,25 +837,22 @@ function updateAlbumCountBadges() {
 }
 
 async function loadAlbumImages() {
-    if (loadAlbumImages.inFlight) return loadAlbumImages.inFlight;
-    if (allGalleryImages.length === 0) setAlbumImages(fallbackAlbumImages);
-    if (window.location.protocol === 'file:') return;
-    loadAlbumImages.inFlight = (async () => {
-        const response = await fetch('/api/albums', { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Album API failed: ${response.status}`);
-        const albums = await response.json();
-        setAlbumImages(albums);
-        const albumModal = document.getElementById('albumModal');
-        if (albumModal && !albumModal.classList.contains('hidden')) {
-            activeAlbumImages = activeAlbumLabel === 'Ảnh hậu trường'
-                ? albumImages.bts
-                : albumImages.albummeme;
-            renderAlbumItems(activeAlbumImages, activeAlbumLabel);
-        }
-    })().finally(() => {
-        loadAlbumImages.inFlight = null;
-    });
-    return loadAlbumImages.inFlight;
+    // Chế độ server (mini PC): lấy danh sách ảnh album từ API
+    if (isServerMode) {
+        if (loadAlbumImages.inFlight) return loadAlbumImages.inFlight;
+        loadAlbumImages.inFlight = (async () => {
+            const response = await fetch('/api/albums', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Album API failed: ${response.status}`);
+            setAlbumImages(await response.json());
+            refreshOpenAlbumModal();
+        })().finally(() => {
+            loadAlbumImages.inFlight = null;
+        });
+        return loadAlbumImages.inFlight;
+    }
+    // Chế độ cloud (jsonbin) / offline: danh sách ảnh nằm trong galleryStore.albums (có fallback cục bộ)
+    setAlbumImages(galleryStore.albums);
+    refreshOpenAlbumModal();
 }
 loadAlbumImages.inFlight = null;
 
@@ -841,13 +863,15 @@ function previewSelectedImage(input) {
 }
 
 // Nén ảnh trong canvas trước khi tải lên để tiết kiệm băng thông Cloudinary
-function compressImage(file) {
+function compressImage(file, maxDimension, maxBytes) {
+  const maxDim = maxDimension || IMAGE_MAX_DIMENSION;
+  const maxSize = maxBytes || IMAGE_MAX_BYTES;
   return new Promise((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
       const image = new Image();
       image.onload = () => {
           URL.revokeObjectURL(objectUrl);
-          const scale = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+          const scale = Math.min(1, maxDim / Math.max(image.naturalWidth, image.naturalHeight));
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
           canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -856,8 +880,8 @@ function compressImage(file) {
           const attempt = (quality, resizeAttempts = 0) => {
               canvas.toBlob(blob => {
                   if (!blob) { reject(new Error('Không nén được ảnh')); return; }
-                  if (blob.size > IMAGE_MAX_BYTES && quality > 0.35) { attempt(quality - 0.1, resizeAttempts); return; }
-                  if (blob.size > IMAGE_MAX_BYTES && resizeAttempts < 3) {
+                  if (blob.size > maxSize && quality > 0.35) { attempt(quality - 0.1, resizeAttempts); return; }
+                  if (blob.size > maxSize && resizeAttempts < 3) {
                       canvas.width = Math.max(1, Math.round(canvas.width * 0.8));
                       canvas.height = Math.max(1, Math.round(canvas.height * 0.8));
                       canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -875,7 +899,7 @@ function compressImage(file) {
 }
 
 // Tải ảnh lên Cloudinary bằng unsigned upload preset, trả về URL ảnh
-async function uploadToCloudinary(blob) {
+async function uploadToCloudinary(blob, folder, namePrefix) {
   if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME.indexOf('thay-bang') === 0 ||
       !CLOUDINARY_UPLOAD_PRESET || CLOUDINARY_UPLOAD_PRESET.indexOf('thay-bang') === 0) {
       throw new Error('Chưa cấu hình Cloudinary (cloud name / upload preset)');
@@ -883,10 +907,12 @@ async function uploadToCloudinary(blob) {
   const formData = new FormData();
   // Tên file DUY NHẤT cho mỗi ảnh. Nếu dùng cùng tên, Cloudinary sẽ dùng cùng public_id
   // và GHI ĐÈ ảnh cũ → mọi lời nhắn sẽ trỏ về cùng một ảnh.
-  const uniqueName = 'loi-nhan-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+  const prefix = namePrefix || 'loi-nhan';
+  const uniqueName = prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
   formData.append('file', blob, uniqueName);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  if (CLOUDINARY_FOLDER) formData.append('folder', CLOUDINARY_FOLDER);
+  const targetFolder = folder === undefined ? CLOUDINARY_FOLDER : folder;
+  if (targetFolder) formData.append('folder', targetFolder);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
       method: 'POST',
       body: formData
@@ -1019,18 +1045,24 @@ function setupDonateQrEffect() {
 
   // 1. Nạp danh sách lời nhắn & lượt yêu thích từ data.js (chỉ dùng khi offline: không có server/jsonbin)
   function fetchMessagesFromLocalData() {
-      const data = window.SITE_DATA || { messages: [], ratings: {} };
+      const data = window.SITE_DATA || { messages: [], ratings: {}, albums: { bts: [], albummeme: [] } };
       galleryStore = normalizeGalleryStore(data);
       renderMessages(galleryStore.messages);
+      setAlbumImages(galleryStore.albums);
       renderTopRated();
       renderMessageTopRated(galleryStore.messages);
   }
 
   function normalizeGalleryStore(record) {
-      if (Array.isArray(record)) return { messages: record, ratings: {} };
+      if (Array.isArray(record)) return { messages: record, ratings: {}, albums: { bts: [], albummeme: [] } };
+      const albums = record && record.albums && typeof record.albums === 'object' ? record.albums : {};
       return {
           messages: Array.isArray(record?.messages) ? record.messages : [],
-          ratings: record?.ratings && typeof record.ratings === 'object' ? record.ratings : {}
+          ratings: record?.ratings && typeof record.ratings === 'object' ? record.ratings : {},
+          albums: {
+              bts: Array.isArray(albums.bts) ? albums.bts : [],
+              albummeme: Array.isArray(albums.albummeme) ? albums.albummeme : []
+          }
       };
   }
 
@@ -1054,6 +1086,7 @@ function setupDonateQrEffect() {
       if (!res.ok) throw new Error('Server /api/data thất bại: ' + res.status);
       galleryStore = normalizeGalleryStore(await res.json());
       renderMessages(galleryStore.messages);
+      setAlbumImages(galleryStore.albums);
       renderTopRated();
       renderMessageTopRated(galleryStore.messages);
       showAutoSaveToast('✓ Đã lưu lên server', true);
@@ -1107,6 +1140,7 @@ function setupDonateQrEffect() {
       const payload = await res.json();
       galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
       renderMessages(galleryStore.messages);
+      setAlbumImages(galleryStore.albums);
       renderTopRated();
       renderMessageTopRated(galleryStore.messages);
       showAutoSaveToast('✓ Đã được tải lên', true);
@@ -1132,6 +1166,7 @@ function setupDonateQrEffect() {
       galleryStore = await fetchFromJsonBinWithRetry(3);
       isCloudMode = true;
       renderMessages(galleryStore.messages);
+      setAlbumImages(galleryStore.albums);
       renderTopRated();
       renderMessageTopRated(galleryStore.messages);
       return true;
@@ -1147,6 +1182,7 @@ function setupDonateQrEffect() {
               galleryStore = remote;
               isCloudMode = true;
               renderMessages(galleryStore.messages);
+              setAlbumImages(galleryStore.albums);
               renderTopRated();
               renderMessageTopRated(galleryStore.messages);
           }
@@ -1388,6 +1424,7 @@ function setupDonateQrEffect() {
       } else if (nameInput) {
           nameInput.readOnly = false;
       }
+      updateAlbumAdminTools();
       // Chỉ chặn gửi khi tính năng đăng nhập thực sự khả dụng
       if (submitBtn) submitBtn.disabled = googleAuthReady && !loggedIn;
   }
@@ -1700,6 +1737,11 @@ function setupDonateQrEffect() {
                   <button type="button" data-gallery-image="${escapeHtml(imgSrc)}" class="block w-full aspect-square cursor-pointer group">
                       <img src="${escapeHtml(imgSrc)}" alt="${label} ${index + 1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.closest('div').style.display='none'">
                   </button>
+                  ${isAdmin() ? `
+                  <div class="absolute top-1.5 right-1.5 flex gap-1.5 z-10">
+                      <button type="button" data-album-download="${escapeHtml(imgSrc)}" title="Tải xuống" class="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/80 transition-colors"><i class="ph ph-download-simple text-sm"></i></button>
+                      <button type="button" data-album-delete="${escapeHtml(imgSrc)}" title="Xoá khỏi album" class="w-7 h-7 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-red-600 transition-colors"><i class="ph ph-trash text-sm"></i></button>
+                  </div>` : ''}
                   <div class="bg-white p-2">
                       <div class="flex items-center justify-between gap-1">
                           <span class="text-xs text-gray-400">${rating.favorites} yêu thích</span>
@@ -1712,11 +1754,98 @@ function setupDonateQrEffect() {
           `;
       }).join('');
       gridList.querySelectorAll('[data-gallery-image]').forEach(button => {
-          button.addEventListener('click', () => openLightbox(button.dataset.galleryImage));
+          button.addEventListener('click', () => openLightbox(button.dataset.galleryImage, images));
       });
       gridList.querySelectorAll('[data-favorite-image]').forEach(button => {
           button.addEventListener('click', () => toggleFavorite(button.dataset.favoriteImage));
       });
+      gridList.querySelectorAll('[data-album-download]').forEach(button => {
+          button.addEventListener('click', event => { event.stopPropagation(); downloadAlbumImage(button.dataset.albumDownload); });
+      });
+      gridList.querySelectorAll('[data-album-delete]').forEach(button => {
+          button.addEventListener('click', event => { event.stopPropagation(); deleteAlbumImage(button.dataset.albumDelete); });
+      });
+  }
+
+  // ==================== ADMIN: TẢI LÊN / TẢI XUỐNG / XOÁ ẢNH ALBUM ====================
+  function updateAlbumAdminTools() {
+      const tools = document.getElementById('albumAdminTools');
+      if (!tools) return;
+      tools.classList.toggle('hidden', !isAdmin());
+      tools.classList.toggle('flex', isAdmin());
+  }
+
+  async function handleAlbumUpload(input) {
+      if (!isAdmin()) return;
+      const files = Array.from(input.files || []);
+      input.value = '';
+      const imageFiles = files.filter(f => f.type.startsWith('image/'));
+      if (!imageFiles.length) { showAutoSaveToast('⚠ Chỉ nhận file ảnh', false); return; }
+
+      const albumKey = activeAlbumLabel === 'Ảnh hậu trường' ? 'bts' : 'albummeme';
+      const folder = CLOUDINARY_ALBUM_FOLDERS[albumKey];
+      const statusEl = document.getElementById('albumUploadStatus');
+
+      if (!galleryStore.albums) galleryStore.albums = { bts: [], albummeme: [] };
+      if (!Array.isArray(galleryStore.albums[albumKey])) galleryStore.albums[albumKey] = [];
+
+      let ok = 0;
+      for (let i = 0; i < imageFiles.length; i += 1) {
+          if (statusEl) statusEl.innerText = `Đang tải ${i + 1}/${imageFiles.length}...`;
+          try {
+              const blob = await compressImage(imageFiles[i], ALBUM_IMAGE_MAX_DIMENSION, ALBUM_IMAGE_MAX_BYTES);
+              const url = await uploadToCloudinary(blob, folder, albumKey);
+              galleryStore.albums[albumKey].push(url);
+              ok += 1;
+          } catch (err) {
+              console.error('Tải ảnh album lên thất bại:', err);
+          }
+      }
+      if (statusEl) statusEl.innerText = '';
+
+      if (ok > 0) {
+          saveGalleryStore();
+          setAlbumImages(galleryStore.albums);
+          refreshOpenAlbumModal();
+          renderTopRated();
+          showAutoSaveToast(`✓ Đã thêm ${ok} ảnh vào album`, true);
+      } else {
+          showAutoSaveToast('⚠ Không tải được ảnh nào', false);
+      }
+  }
+
+  function downloadAlbumImage(url) {
+      let href = url;
+      // Ảnh Cloudinary: thêm fl_attachment để buộc tải xuống (ảnh khác tên miền vẫn tải được)
+      if (/^https:\/\/res\.cloudinary\.com\//i.test(url)) {
+          href = url.replace('/image/upload/', '/image/upload/fl_attachment/');
+      }
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = 'album-' + Date.now() + '.jpg';
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  }
+
+  function deleteAlbumImage(url) {
+      if (!isAdmin()) return;
+      if (!window.confirm('Xoá ảnh này khỏi album?\n(Ảnh vẫn còn trên Cloudinary, chỉ gỡ khỏi danh sách hiển thị)')) return;
+      let removed = false;
+      ['bts', 'albummeme'].forEach(key => {
+          const arr = galleryStore.albums && galleryStore.albums[key];
+          if (Array.isArray(arr)) {
+              const i = arr.indexOf(url);
+              if (i !== -1) { arr.splice(i, 1); removed = true; }
+          }
+      });
+      if (!removed) return;
+      saveGalleryStore();
+      setAlbumImages(galleryStore.albums);
+      refreshOpenAlbumModal();
+      renderTopRated();
+      showAutoSaveToast('🗑 Đã xoá ảnh khỏi album', true);
   }
 
   function refreshAlbum() {
@@ -1740,7 +1869,6 @@ function setupDonateQrEffect() {
 
   // Mở modal chứa lưới ảnh của Album Meme
   function openAlbumModal() {
-    const gridList = document.getElementById('albumGridList');
     const titleEl = document.getElementById('albumModalTitle');
     if(titleEl) titleEl.innerText = "Album Meme của Giang";
 
@@ -1748,6 +1876,7 @@ function setupDonateQrEffect() {
 
     activeAlbumImages = memeList;
     activeAlbumLabel = 'Ảnh meme';
+    updateAlbumAdminTools();
     renderAlbumItems(memeList, 'Ảnh meme');
     renderTopRated();
 
@@ -1767,6 +1896,7 @@ function setupDonateQrEffect() {
 
     activeAlbumImages = btsList;
     activeAlbumLabel = 'Ảnh hậu trường';
+    updateAlbumAdminTools();
     renderAlbumItems(btsList, 'Ảnh hậu trường');
     renderTopRated();
 
