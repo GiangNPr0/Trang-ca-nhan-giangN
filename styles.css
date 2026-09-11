@@ -209,6 +209,104 @@
             opacity: 1;
             transform: translate(-50%, 0);
         }
+        /* Popup hiệu ứng "Dự án cá nhân" — trỏ chuột vào là hiện, ấn vào đi tới du-an/ */
+        .project-library-link {
+            position: relative;
+            display: inline-block;
+        }
+        /* Cầu nối giữa tiêu đề và popup — đi chuột xuống không bị mất hover */
+        .project-library-link::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            height: 14px;
+        }
+        .project-library-popup {
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 0;
+            z-index: 60;
+            width: 280px;
+            max-width: calc(100vw - 56px);
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+            visibility: hidden;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+        }
+        .project-library-link:hover .project-library-popup,
+        .project-library-link:focus-within .project-library-popup {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            visibility: visible;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .project-library-popup::before {
+            content: "";
+            position: absolute;
+            top: -6px;
+            left: 24px;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 7px solid #ffffff;
+            filter: drop-shadow(0 -2px 2px rgba(15, 23, 42, 0.05));
+        }
+        .project-library-popup-head {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        .project-library-popup-head i {
+            color: #2563eb;
+            font-size: 15px;
+        }
+        .project-library-popup-desc {
+            margin: 0 0 8px;
+            font-size: 11.5px;
+            line-height: 1.5;
+            color: #6b7280;
+        }
+        /* Khi popup chỉ có mô tả (như "Dự án cá nhân") thì bỏ margin dưới cho gọn */
+        .project-library-popup-desc:last-child {
+            margin-bottom: 0;
+        }
+        .project-library-popup-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .project-library-popup-cta:hover {
+            color: #1d4ed8;
+        }
+        /* Dark theme cho popup */
+        body.dark-theme .project-library-popup,
+        html.dark-theme .project-library-popup {
+            background: #1e293b;
+            border-color: #475569;
+        }
+        body.dark-theme .project-library-popup::before,
+        html.dark-theme .project-library-popup::before {
+            border-bottom-color: #1e293b;
+        }
+        body.dark-theme .project-library-popup-head,
+        html.dark-theme .project-library-popup-head { color: #f8fafc; }
+        body.dark-theme .project-library-popup-desc,
+        html.dark-theme .project-library-popup-desc { color: #cbd5e1; }
         .video-preview-card {
             position: relative;
             z-index: 0;
@@ -296,7 +394,7 @@
                 transform: none;
                 box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
             }
-            .video-preview-card h3 {
+            .video-preview-card h3:not(.video-title) {
                 font-size: 0.8125rem;
             }
             .video-frame {

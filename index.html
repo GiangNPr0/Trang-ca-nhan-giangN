@@ -203,25 +203,14 @@
         <section class="space-y-4">
           <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
             <div class="project-library-link">
-              <h2 class="font-bold text-lg text-gray-900">
+              <h2 class="flex items-center gap-2 font-bold text-lg text-gray-900">
                 <a href="du-an/" title="Mở kho Dự án cá nhân" class="inline-flex items-center gap-2 hover:text-blue-600 transition-colors">
                   <i class="ph-fill ph-video text-blue-600"></i> Dự án cá nhân
                 </a>
               </h2>
-              <!-- Popup nhẹ xem trước kho dự án khi trỏ chuột -->
+              <!-- Popup hiệu ứng khi trỏ chuột vào chữ Dự án cá nhân -->
               <div class="project-library-popup" role="tooltip">
-                <div class="project-library-popup-head">
-                  <i class="ph-fill ph-folder-open" aria-hidden="true"></i> Kho dự án cá nhân
-                </div>
-                <p class="project-library-popup-desc">Khám phá các sản phẩm sáng tạo qua từng danh mục chi tiết của Giang Nguyễn.</p>
-                <div class="project-library-popup-tags">
-                  <span>Ảnh</span>
-                  <span>Giải trí</span>
-                  <span>Thời trang</span>
-                  <span>TVC</span>
-                  <span>Beauty/Sản phẩm</span>
-                </div>
-                <div class="project-library-popup-cta">Bấm vào để xem kho dự án <i class="ph ph-arrow-right" aria-hidden="true"></i></div>
+                <p class="project-library-popup-desc">Kho dự án.</p>
               </div>
             </div>
             <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
@@ -240,9 +229,17 @@
           </div>
 
           <div class="video-preview-card bg-surface p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
-            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-blue-600"></span> Video chụp kỷ yếu của a Giang Hé Lô
-            </h3>
+            <div class="project-library-link">
+              <h3 class="video-title font-bold text-lg text-gray-900 flex items-center gap-2">
+                <a href="https://www.facebook.com/n.giang62/reels/" target="_blank" rel="noopener noreferrer" title="Xem Reels Facebook của a Giang Hé Lô" class="inline-flex items-center gap-2 hover:text-blue-600 transition-colors">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span> Video chụp kỷ yếu của a Giang Hé Lô
+                </a>
+              </h3>
+              <!-- Popup hiệu ứng khi trỏ chuột vào Video chụp kỷ yếu -->
+              <div class="project-library-popup" role="tooltip">
+                <p class="project-library-popup-desc">Video kỷ yếu.</p>
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-2 sm:gap-3">
               <div class="video-frame fb-video w-full aspect-[9/16] rounded-lg overflow-hidden bg-black" 
                    data-href="https://www.facebook.com/reel/1629472991402120" 
