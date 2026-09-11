@@ -392,8 +392,51 @@ function setupDonateQrEffect() {
   const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3/b';
   let isCloudMode = false;
 
-  // Đọc dữ liệu mới nhất từ jsonbin.io
+  // ==================== PROXY BẢO MẬT (CHE KHOÁ JSONBIN) ====================
+  // Vấn đề: code chạy trong trình duyệt nên ai mở web cũng đọc được JSONBIN_MASTER_KEY ở trên
+  // → có thể ghi đè/xoá sạch bin (mất hết lời nhắn + lượt yêu thích).
+  // Cách khắc phục: dựng một proxy nhỏ (Cloudflare Worker — xem thư mục cloudflare-worker
+  // trong Documents\_giangN-backup\) giữ khoá ở phía server, rồi dán URL vào JSONBIN_PROXY_URL.
+  // Khi đã điền URL proxy:
+  //   • Đọc dữ liệu   : GET  <proxy>/data      (công khai, không cần khoá)
+  //   • Gửi lời nhắn  : POST <proxy>/post      (kèm ID token Google để server xác thực người gửi)
+  //   • Thả tim       : POST <proxy>/favorite  (kèm ID token, server chỉ cộng/trừ ±1)
+  //   • Admin sửa/xoá : POST <proxy>/admin     (kèm ID token, server kiểm tra đúng email admin)
+  // Sau khi proxy chạy ổn, có thể đặt JSONBIN_MASTER_KEY = '' để khoá biến mất hoàn toàn khỏi web.
+  // Để trống '' = chưa deploy → trang chạy y như cũ (dùng khoá trực tiếp).
+  const JSONBIN_PROXY_URL = '';
+  function useProxy() { return !!JSONBIN_PROXY_URL; }
+  let googleIdToken = null;   // ID token Google (JWT ~1 giờ) để proxy xác thực người gửi
+
+  function proxyEndpoint(path) {
+      return JSONBIN_PROXY_URL.replace(/\/+$/, '') + path;
+  }
+
+  function proxyHeaders(withJson) {
+      const headers = {};
+      if (withJson) headers['Content-Type'] = 'application/json';
+      if (googleIdToken) headers['X-Google-Token'] = googleIdToken;
+      return headers;
+  }
+
+  async function proxyRequest(path, options) {
+      const res = await fetch(proxyEndpoint(path), options);
+      let payload = null;
+      try { payload = await res.json(); } catch (err) {}
+      if (!res.ok) {
+          const err = new Error((payload && payload.error) || ('Proxy thất bại: ' + res.status));
+          err.status = res.status;
+          throw err;
+      }
+      return payload;
+  }
+
+  // Đọc dữ liệu mới nhất (qua proxy nếu đã cấu hình, ngược lại gọi jsonbin trực tiếp)
   async function fetchFromJsonBin() {
+      if (useProxy()) {
+          const payload = await proxyRequest('/data', { cache: 'no-store' });
+          return normalizeGalleryStore(payload && payload.record ? payload.record : payload);
+      }
       const res = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}/latest`, {
           headers: { 'X-Master-Key': JSONBIN_MASTER_KEY },
           cache: 'no-store'
@@ -432,6 +475,48 @@ function setupDonateQrEffect() {
           showAutoSaveToast(`✓ Đã được tải lên (dữ liệu ${sizeKB}KB/100KB)`, true);
       } else {
           showAutoSaveToast('✓ Đã được tải lên', true);
+      }
+  }
+
+  // ==================== GHI QUA PROXY (chỉ dùng khi đã cấu hình JSONBIN_PROXY_URL) ====================
+
+  // Ghi toàn bộ dữ liệu (dùng cho thao tác admin: sửa/xoá lời nhắn, thêm/xoá ảnh album)
+  async function syncToProxyAdmin() {
+      const body = JSON.stringify({ store: galleryStore });
+      const sizeKB = Math.round(body.length / 1024);
+      const payload = await proxyRequest('/admin', { method: 'POST', headers: proxyHeaders(true), body });
+      galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
+      renderAll();
+      if (sizeKB >= 85) {
+          showAutoSaveToast(`⚠ Dữ liệu gần đầy bin jsonbin (${sizeKB}KB/100KB) — nên xoá bớt lời nhắn cũ`, false);
+      } else {
+          showAutoSaveToast('✓ Đã được tải lên', true);
+      }
+  }
+
+  // Gửi 1 lời nhắn mới: server tự xác thực Google rồi chèn vào bin (không ghi đè toàn bộ dữ liệu)
+  async function postMessageViaProxy(item) {
+      const payload = await proxyRequest('/post', {
+          method: 'POST',
+          headers: proxyHeaders(true),
+          body: JSON.stringify({ message: item })
+      });
+      if (payload && payload.record) {
+          galleryStore = normalizeGalleryStore(payload.record);
+          renderAll();
+      }
+  }
+
+  // Đồng bộ chênh lệch lượt yêu thích: [{ image, delta }]
+  async function syncFavoritesViaProxy(deltas) {
+      const payload = await proxyRequest('/favorite', {
+          method: 'POST',
+          headers: proxyHeaders(true),
+          body: JSON.stringify({ deltas })
+      });
+      if (payload && payload.record) {
+          galleryStore = normalizeGalleryStore(payload.record);
+          renderAll();
       }
   }
 
@@ -593,7 +678,18 @@ function setupDonateQrEffect() {
       const task = autoSaveQueue.then(() => {
           if (isServerMode) return syncToServer();
           // Chỉ ghi lên cloud khi đã đọc được dữ liệu cloud (tránh ghi đè khi mất kết nối)
-          if (isCloudMode) return syncToJsonBin();
+          if (isCloudMode) {
+              if (useProxy()) {
+                  // Với proxy: ghi TOÀN BỘ dữ liệu chỉ dành cho admin.
+                  // (Lời nhắn mới và thả tim của người dùng thường đi qua /post và /favorite.)
+                  if (!isAdmin()) {
+                      showAutoSaveToast('⚠ Cần quyền admin cho thao tác này', false);
+                      return;
+                  }
+                  return syncToProxyAdmin();
+              }
+              return syncToJsonBin();
+          }
           return syncDataToFile();
       }).catch(err => {
           console.warn('Lưu dữ liệu thất bại:', err);
@@ -654,7 +750,19 @@ function setupDonateQrEffect() {
   function loadGoogleUser() {
       try {
           const raw = localStorage.getItem('giang_google_user');
-          return raw ? JSON.parse(raw) : null;
+          if (!raw) return null;
+          const saved = JSON.parse(raw);
+          googleIdToken = saved && saved.idToken ? saved.idToken : null;
+          // ID token của Google chỉ sống ~1 giờ. Khi dùng proxy thì BẮT BUỘC có token hợp lệ để ghi
+          // dữ liệu, nên phiên hết hạn coi như chưa đăng nhập (tránh gửi rồi báo lỗi 401).
+          if (useProxy()) {
+              const expMs = saved && saved.exp ? Number(saved.exp) * 1000 : 0;
+              if (!googleIdToken || !expMs || expMs < Date.now()) {
+                  googleIdToken = null;
+                  return null;
+              }
+          }
+          return saved;
       } catch (err) { return null; }
   }
 
@@ -668,7 +776,9 @@ function setupDonateQrEffect() {
           sub: payload.sub || '',
           exp: payload.exp || 0
       };
-      saveGoogleUser(googleUser);
+      // Lưu ID token (JWT) để proxy xác thực khi gửi lời nhắn / thả tim / thao tác admin
+      googleIdToken = response.credential || null;
+      saveGoogleUser({ ...googleUser, idToken: googleIdToken });
       updateGoogleAuthUI();
       renderMessages(galleryStore.messages);
       showAutoSaveToast('✓ Đã đăng nhập: ' + googleUser.name + (isAdmin() ? ' (Admin)' : ''), true);
@@ -677,6 +787,7 @@ function setupDonateQrEffect() {
   function googleSignOut() {
       try { google.accounts.id.disableAutoSelect(); } catch (err) {}
       googleUser = null;
+      googleIdToken = null;
       saveGoogleUser(null);
       updateGoogleAuthUI();
       renderMessages(galleryStore.messages);
@@ -783,16 +894,33 @@ function setupDonateQrEffect() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
 
-      galleryStore.messages.unshift({
+      const newMessage = {
           name,
           message,
           image: selectedImageSource || null,
           email: googleUser ? googleUser.email : null,
           avatar: googleUser ? googleUser.picture : null,
           time: timeStr
-      });
+      };
+      galleryStore.messages.unshift(newMessage);
 
-      saveGalleryStore();
+      if (useProxy()) {
+          // Có proxy: chỉ gửi RIÊNG lời nhắn này (server tự xác thực Google rồi chèn vào bin),
+          // KHÔNG ghi đè toàn bộ dữ liệu từ máy người dùng. Lỗi thì gỡ lời nhắn tạm khỏi giao diện.
+          postMessageViaProxy(newMessage).catch(err => {
+              console.warn('Gửi lời nhắn qua proxy thất bại:', err);
+              const index = galleryStore.messages.indexOf(newMessage);
+              if (index !== -1) galleryStore.messages.splice(index, 1);
+              renderMessages(galleryStore.messages);
+              renderMessageTopRated(galleryStore.messages);
+              const hetHan = err && (err.status === 401 || err.status === 403);
+              showAutoSaveToast(hetHan
+                  ? '⚠ Phiên đăng nhập Google đã hết hạn — hãy đăng nhập lại rồi gửi lại'
+                  : '⚠ Không gửi được lời nhắn lên máy chủ', false);
+          });
+      } else {
+          saveGalleryStore();
+      }
       renderMessages(galleryStore.messages);
       renderMessageTopRated(galleryStore.messages);
 
@@ -1171,9 +1299,9 @@ function setupDonateQrEffect() {
       saveGalleryStore();
   }
   // Đóng tab / rời tab: gửi ngay phần đang chờ để không mất lượt yêu thích vừa bấm
-  window.addEventListener('pagehide', flushScheduledSave);
+  window.addEventListener('pagehide', () => { flushScheduledSave(); sendPendingFavorites(); });
   document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') flushScheduledSave();
+      if (document.visibilityState === 'hidden') { flushScheduledSave(); sendPendingFavorites(); }
   });
 
   function toggleFavorite(image) {
@@ -1182,9 +1310,30 @@ function setupDonateQrEffect() {
       rating.favorites = Math.max(0, rating.favorites + (active ? -1 : 1));
       galleryStore.ratings[image] = rating;
       localStorage.setItem(`giang_favorite_${image}`, active ? '0' : '1');
-      scheduleGallerySave();
+      if (useProxy()) queueProxyFavoriteChange(image, active ? -1 : 1);
+      else scheduleGallerySave();
       refreshAlbum();
       renderMessages(galleryStore.messages);
+  }
+
+  // (Khi dùng proxy) Gộp nhiều lần thả tim liên tiếp thành 1 request, chỉ gửi tổng chênh lệch ±1 cho từng ảnh
+  const pendingFavoriteDeltas = {};
+  let favoriteProxyTimer = null;
+  function queueProxyFavoriteChange(image, delta) {
+      pendingFavoriteDeltas[image] = (pendingFavoriteDeltas[image] || 0) + delta;
+      try { localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore)); } catch (err) {}
+      if (favoriteProxyTimer) clearTimeout(favoriteProxyTimer);
+      favoriteProxyTimer = setTimeout(sendPendingFavorites, 800);
+  }
+  function sendPendingFavorites() {
+      if (favoriteProxyTimer) { clearTimeout(favoriteProxyTimer); favoriteProxyTimer = null; }
+      const deltas = Object.keys(pendingFavoriteDeltas).map(image => ({ image, delta: pendingFavoriteDeltas[image] }));
+      if (!deltas.length) return;
+      Object.keys(pendingFavoriteDeltas).forEach(key => { delete pendingFavoriteDeltas[key]; });
+      syncFavoritesViaProxy(deltas).catch(err => {
+          console.warn('Đồng bộ lượt yêu thích qua proxy thất bại:', err);
+          showAutoSaveToast('⚠ Không đồng bộ được lượt yêu thích', false);
+      });
   }
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
