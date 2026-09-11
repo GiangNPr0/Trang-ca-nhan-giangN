@@ -302,31 +302,8 @@
         }
         .message-photo:hover,
         .message-photo:focus-visible {
-            position: relative;
-            z-index: 9999;
             box-shadow: 0 18px 36px rgba(15, 23, 42, 0.3);
             filter: saturate(1.08) contrast(1.04);
-        }
-        .message-photo-preview {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            z-index: 10000;
-            width: min(72vw, 310px);
-            max-height: 72vh;
-            object-fit: contain;
-            transform: translate(-50%, -50%) scale(0.92);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            border: 4px solid white;
-            border-radius: 1rem;
-            box-shadow: 0 22px 50px rgba(15, 23, 42, 0.4);
-            background: white;
-        }
-        .message-photo-preview.is-visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
         }
         #messagesList {
             position: relative;
@@ -782,6 +759,7 @@
   let allGalleryImages = [];
   let albumImages = { bts: [], albummeme: [] };
 let currentIndex = 0;
+let lightboxList = [];
 let activeAlbumImages = [];
 let activeAlbumLabel = 'Ảnh meme';
 const fallbackAlbumImages = {
@@ -1542,23 +1520,15 @@ function setupDonateQrEffect() {
     `).join('');
 
       listEl.querySelectorAll('[data-message-image]').forEach(image => {
-          const showPreview = () => {
-              document.querySelector('.message-photo-preview')?.remove();
-              const preview = document.createElement('img');
-              preview.src = image.dataset.messageImage;
-              preview.alt = 'Ảnh lời nhắn phóng to';
-              preview.className = 'message-photo-preview';
-              document.body.appendChild(preview);
-              requestAnimationFrame(() => preview.classList.add('is-visible'));
-          };
-          const hidePreview = () => {
-              const preview = document.querySelector('.message-photo-preview');
-              if (preview) preview.remove();
-          };
-          image.addEventListener('mouseenter', showPreview);
-          image.addEventListener('mouseleave', hidePreview);
-          image.addEventListener('focus', showPreview);
-          image.addEventListener('blur', hidePreview);
+          // Bấm vào ảnh để mở lightbox giống album (thay cho pop-up khi rê chuột trước đây)
+          const openFromMessage = () => openLightbox(image.dataset.messageImage, getMessageImageList());
+          image.addEventListener('click', openFromMessage);
+          image.addEventListener('keydown', event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  openFromMessage();
+              }
+          });
       });
       listEl.querySelectorAll('[data-message-favorite-index]').forEach(button => {
           const image = messages[Number.parseInt(button.dataset.messageFavoriteIndex, 10)]?.image;
@@ -1649,6 +1619,19 @@ function setupDonateQrEffect() {
           /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s"']+$/i.test(source);
   }
 
+  // Danh sách URL ảnh lời nhắn (để lightbox điều hướng giống album)
+  function getMessageImageList() {
+      const seen = new Set();
+      const result = [];
+      (galleryStore.messages || []).forEach(item => {
+          if (isSafeImageSource(item.image) && !seen.has(item.image)) {
+              seen.add(item.image);
+              result.push(item.image);
+          }
+      });
+      return result;
+  }
+
   function getRating(image) {
       const rating = galleryStore.ratings[image];
       return rating && Number.isFinite(rating.favorites)
@@ -1677,7 +1660,7 @@ function setupDonateQrEffect() {
           </button>
       `).join('') : '<p class="text-xs text-gray-400 italic">Chưa có lượt yêu thích nào.</p>';
       list.querySelectorAll('[data-top-image]').forEach(button => {
-          button.addEventListener('click', () => openLightbox(button.dataset.topImage));
+          button.addEventListener('click', () => openLightbox(button.dataset.topImage, allGalleryImages));
       });
   }
 
@@ -1702,7 +1685,7 @@ function setupDonateQrEffect() {
           </button>
       `).join('') : '<p class="text-xs text-gray-400 italic">Chưa có ảnh lời nhắn được yêu thích.</p>';
       list.querySelectorAll('[data-message-top-image]').forEach(button => {
-          button.addEventListener('click', () => openLightbox(button.dataset.messageTopImage));
+          button.addEventListener('click', () => openLightbox(button.dataset.messageTopImage, getMessageImageList()));
       });
   }
 
@@ -1806,13 +1789,18 @@ function setupDonateQrEffect() {
   }
 
   // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể (hoặc từ lời nhắn)
-  function openLightbox(imgSrc) {
-    document.querySelector('.message-photo-preview')?.remove();
-    currentIndex = allGalleryImages.indexOf(imgSrc);
-    
+  function openLightbox(imgSrc, list) {
+    // Danh sách để điều hướng: ảnh lời nhắn / album / bảng xếp hạng tuỳ nơi gọi
+    lightboxList = (Array.isArray(list) && list.length) ? list.slice() : allGalleryImages.slice();
+    currentIndex = lightboxList.indexOf(imgSrc);
+    if (currentIndex === -1) {
+        lightboxList = [imgSrc];
+        currentIndex = 0;
+    }
+
     const modalImg = document.getElementById('modalImg');
-    if(modalImg) modalImg.src = imgSrc;
-    
+    if(modalImg) modalImg.src = lightboxList[currentIndex];
+
     const imgModal = document.getElementById('imageModal');
     if(imgModal) {
         imgModal.classList.add('flex');
@@ -1834,19 +1822,19 @@ function setupDonateQrEffect() {
   // Chuyển sang ảnh kế tiếp trong Lightbox
   function nextImage(event) {
     if (event) event.stopPropagation();
-    if (allGalleryImages.length === 0) return;
-    currentIndex = (currentIndex + 1) % allGalleryImages.length;
+    if (lightboxList.length === 0) return;
+    currentIndex = (currentIndex + 1) % lightboxList.length;
     const modalImg = document.getElementById('modalImg');
-    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
+    if(modalImg) modalImg.src = lightboxList[currentIndex];
   }
 
   // Quay lại ảnh trước đó trong Lightbox
   function prevImage(event) {
     if (event) event.stopPropagation();
-    if (allGalleryImages.length === 0) return;
-    currentIndex = (currentIndex - 1 + allGalleryImages.length) % allGalleryImages.length;
+    if (lightboxList.length === 0) return;
+    currentIndex = (currentIndex - 1 + lightboxList.length) % lightboxList.length;
     const modalImg = document.getElementById('modalImg');
-    if(modalImg) modalImg.src = allGalleryImages[currentIndex];
+    if(modalImg) modalImg.src = lightboxList[currentIndex];
   }
 
   // Lắng nghe phím tắt bàn phím khi xem ảnh phóng to
