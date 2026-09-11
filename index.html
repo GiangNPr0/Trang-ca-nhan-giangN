@@ -591,13 +591,13 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
 <form id="guestbookForm" onsubmit="handleGuestbookSubmit(event)" class="lg:col-span-2 space-y-3">
-    <!-- Đăng nhập Google (bắt buộc để gửi lời nhắn - chống spam) -->
+    <!-- Đăng nhập Google (Đăng nhập gú-gồ để gửi lời nhắn nha) -->
     <div id="googleAuthBox" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
         <!-- Chưa đăng nhập -->
         <div id="googleSignedOut">
             <p class="text-xs text-gray-500 mb-2 flex items-center gap-1">
                 <i class="ph ph-lock-key text-blue-500"></i>
-                Đăng nhập bằng Google để gửi lời nhắn (chống spam).
+                Đăng nhập gú-gồ để gửi lời nhắn nha.
             </p>
             <div id="g_id_signin"></div>
             <p id="googleAuthNote" class="hidden text-xs text-amber-600 mt-2"></p>
@@ -611,7 +611,7 @@
                     <span id="googleAdminBadge" class="hidden text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">ADMIN</span>
                 </div>
                 <div class="text-[11px] text-emerald-600 flex items-center gap-1">
-                    <i class="ph-fill ph-check-circle"></i> Đã đăng nhập Google
+                    <i class="ph-fill ph-check-circle"></i> Đã đăng nhập Gú-gồ
                 </div>
             </div>
             <button type="button" onclick="googleSignOut()" class="text-xs font-semibold text-gray-500 hover:text-red-500 px-2 py-1 rounded-lg transition-colors">Đăng xuất</button>
@@ -693,7 +693,7 @@
             <div class="relative rounded-xl bg-gradient-to-br from-pink-50 to-blue-50 p-4 border border-pink-100">
               <i class="ph-fill ph-quotes text-2xl text-pink-300 absolute top-2 left-3"></i>
               <p class="text-sm font-medium text-gray-700 italic leading-relaxed pl-6">
-                "Cảm ơn các con vợ đã ghé thăm trang cá nhân cửa a. Chúc con vợ một ngày tốt lành và luôn vui vẻ nhé!"
+                "Cảm ơn các con vợ đã ghé thăm trang cá nhân của a. Chúc con vợ một ngày tốt lành và luôn vui vẻ nhé!"
               </p>
               <div class="flex items-center gap-2 mt-3 pl-6">
                 <span class="h-px w-8 bg-pink-300"></span>
@@ -774,7 +774,8 @@
   let totalMemeImages = 0;
   let totalBtsImages = 0;
 
-  // Dữ liệu của trang giờ nằm ngay trong file data.js của dự án (không còn dùng dịch vụ bên ngoài)
+  // Dữ liệu khởi tạo lấy từ data.js (window.SITE_DATA) và dùng làm bản dự phòng khi offline.
+  // Khi chạy online: lời nhắn & lượt yêu thích đồng bộ qua jsonbin.io, ảnh lưu trên Cloudinary, đăng nhập bằng Google.
   let galleryStore = normalizeGalleryStore(window.SITE_DATA || { messages: [], ratings: {} });
   let galleryDataDirty = false;
 
@@ -1036,9 +1037,9 @@ function setupDonateQrEffect() {
  }, { passive: true });
 }
 
- // ==================== XỬ LÝ DỮ LIỆU NỘI BỘ (FILE data.js) & LỜI NHẮN ====================
+ // ==================== XỬ LÝ DỮ LIỆU DỰ PHÒNG (data.js) & LỜI NHẮN ====================
 
-  // 1. Nạp danh sách lời nhắn & lượt yêu thích từ file data.js
+  // 1. Nạp danh sách lời nhắn & lượt yêu thích từ data.js (chỉ dùng khi offline: không có server/jsonbin)
   function fetchMessagesFromLocalData() {
       const data = window.SITE_DATA || { messages: [], ratings: {} };
       galleryStore = normalizeGalleryStore(data);
@@ -1444,7 +1445,7 @@ function setupDonateQrEffect() {
       updateGoogleAuthUI();
   }
 
-  // 2. Gửi lời nhắn mới (server sẽ lưu local và đồng bộ tiếp lên JSONBin)
+  // 2. Gửi lời nhắn mới (online: đồng bộ lên jsonbin.io — ảnh đã tải sẵn lên Cloudinary; offline: lưu data.js/local)
   function handleGuestbookSubmit(e) {
       e.preventDefault();
       const nameInput = document.getElementById('guestName');
