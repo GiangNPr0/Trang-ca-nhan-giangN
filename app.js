@@ -368,6 +368,9 @@ function setupDonateQrEffect() {
 
   // Thử kết nối server; nếu có thì chuyển sang chế độ tự động hoàn toàn
   async function detectServerMode() {
+      // Chỉ thử khi trang được phục vụ qua http(s). Mở bằng file:// (hoặc host tĩnh không có
+      // backend) thì chắc chắn không có /api/data → bỏ luôn để tránh 1 request 404 mỗi lần tải trang.
+      if (!/^https?:$/i.test(window.location.protocol)) return false;
       try {
           const res = await fetch('/api/data', { cache: 'no-store' });
           if (!res.ok) return false;
@@ -402,19 +405,34 @@ function setupDonateQrEffect() {
 
   // Ghi toàn bộ galleryStore lên jsonbin.io
   async function syncToJsonBin() {
+      const body = JSON.stringify(galleryStore);
+      const sizeKB = Math.round(body.length / 1024);
       const res = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}`, {
           method: 'PUT',
           headers: {
               'Content-Type': 'application/json',
               'X-Master-Key': JSONBIN_MASTER_KEY
           },
-          body: JSON.stringify(galleryStore)
+          body
       });
-      if (!res.ok) throw new Error('JSONBin ghi thất bại: ' + res.status);
+      if (!res.ok) {
+          // Bin free của jsonbin chỉ chứa ~100KB → lỗi 400/413 thường là do dữ liệu quá lớn
+          const err = new Error('JSONBin ghi thất bại: ' + res.status);
+          err.status = res.status;
+          err.sizeKB = sizeKB;
+          throw err;
+      }
       const payload = await res.json();
       galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
       renderAll();
-      showAutoSaveToast('✓ Đã được tải lên', true);
+      // Cảnh báo sớm khi dữ liệu tiến gần giới hạn 100KB của bin free
+      if (sizeKB >= 85) {
+          showAutoSaveToast(`⚠ Dữ liệu gần đầy bin jsonbin (${sizeKB}KB/100KB) — nên xoá bớt lời nhắn cũ`, false);
+      } else if (sizeKB >= 60) {
+          showAutoSaveToast(`✓ Đã được tải lên (dữ liệu ${sizeKB}KB/100KB)`, true);
+      } else {
+          showAutoSaveToast('✓ Đã được tải lên', true);
+      }
   }
 
   // Đọc từ jsonbin.io kèm thử lại vài lần để chịu được lỗi mạng tạm thời
@@ -579,8 +597,17 @@ function setupDonateQrEffect() {
           return syncDataToFile();
       }).catch(err => {
           console.warn('Lưu dữ liệu thất bại:', err);
-          if (isServerMode) showAutoSaveToast('Không gửi được lên server', false);
-          else if (isCloudMode) showAutoSaveToast('Không đồng bộ được lên jsonbin.io', false);
+          if (isServerMode) {
+              showAutoSaveToast('Không gửi được lên server', false);
+          } else if (isCloudMode) {
+              const sizeKB = err && err.sizeKB ? err.sizeKB : Math.round(JSON.stringify(galleryStore).length / 1024);
+              const isTooBig = !!(err && (err.status === 400 || err.status === 413));
+              if (isTooBig) {
+                  showAutoSaveToast(`⚠ Bin jsonbin đã đầy (${sizeKB}KB / giới hạn 100KB) — xoá bớt lời nhắn cũ hoặc nâng cấp jsonbin`, false);
+              } else {
+                  showAutoSaveToast(`Không đồng bộ được lên jsonbin.io (dữ liệu ${sizeKB}KB)`, false);
+              }
+          }
       }).finally(() => { pendingSaves = Math.max(0, pendingSaves - 1); });
       autoSaveQueue = task.catch(() => {});
       return autoSaveQueue;
@@ -1126,18 +1153,65 @@ function setupDonateQrEffect() {
       renderMessageTopRated(galleryStore.messages);
   }
 
+  // Gộp các lần bấm yêu thích liên tiếp thành MỘT lần lưu lên cloud (đỡ request, tránh lỗi 429/quota).
+  // Bản dự phòng cục bộ vẫn được ghi ngay nên không sợ mất dữ liệu.
+  let pendingSaveTimer = null;
+  function scheduleGallerySave(delay) {
+      try { localStorage.setItem('giang_site_data_backup', JSON.stringify(galleryStore)); } catch (err) {}
+      if (pendingSaveTimer) clearTimeout(pendingSaveTimer);
+      pendingSaveTimer = setTimeout(() => {
+          pendingSaveTimer = null;
+          saveGalleryStore();
+      }, typeof delay === 'number' ? delay : 800);
+  }
+  function flushScheduledSave() {
+      if (!pendingSaveTimer) return;
+      clearTimeout(pendingSaveTimer);
+      pendingSaveTimer = null;
+      saveGalleryStore();
+  }
+  // Đóng tab / rời tab: gửi ngay phần đang chờ để không mất lượt yêu thích vừa bấm
+  window.addEventListener('pagehide', flushScheduledSave);
+  document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushScheduledSave();
+  });
+
   function toggleFavorite(image) {
       const rating = getRating(image);
       const active = hasFavorite(image);
       rating.favorites = Math.max(0, rating.favorites + (active ? -1 : 1));
       galleryStore.ratings[image] = rating;
       localStorage.setItem(`giang_favorite_${image}`, active ? '0' : '1');
-      saveGalleryStore();
+      scheduleGallerySave();
       refreshAlbum();
       renderMessages(galleryStore.messages);
   }
 
   // ==================== XỬ LÝ ALBUM ẢNH & LIGHTBOX ====================
+
+  // A11y: nhớ nơi đang có tiêu điểm, đưa tiêu điểm vào modal khi mở, trả lại khi đóng,
+  // và giữ phím Tab luẩn quẩn trong modal đang mở.
+  let focusedBeforeModal = null;
+  function focusModal(modal) {
+      focusedBeforeModal = document.activeElement;
+      if (!modal) return;
+      const target = modal.querySelector('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+      if (target) target.focus();
+  }
+  function restoreFocusAfterModal() {
+      const el = focusedBeforeModal;
+      focusedBeforeModal = null;
+      if (el && typeof el.focus === 'function') el.focus();
+  }
+  function trapFocusInside(event, modal) {
+      if (event.key !== 'Tab' || !modal) return;
+      const nodes = modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
 
   // Mở modal chứa lưới ảnh của Album Meme
   function openAlbumModal() {
@@ -1157,6 +1231,7 @@ function setupDonateQrEffect() {
         modal.classList.add('flex');
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        focusModal(modal);
     }
   }
 
@@ -1177,6 +1252,7 @@ function setupDonateQrEffect() {
         modal.classList.add('flex');
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        focusModal(modal);
     }
   }
 
@@ -1188,6 +1264,7 @@ function setupDonateQrEffect() {
         modal.classList.remove('flex');
         document.body.style.overflow = '';
     }
+    restoreFocusAfterModal();
   }
 
   // Mở cửa sổ Lightbox xem phóng to một ảnh cụ thể (hoặc từ lời nhắn)
@@ -1208,6 +1285,7 @@ function setupDonateQrEffect() {
         imgModal.classList.add('flex');
         imgModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        focusModal(imgModal);
     }
   }
 
@@ -1217,8 +1295,11 @@ function setupDonateQrEffect() {
     if(imgModal) {
         imgModal.classList.add('hidden');
         imgModal.classList.remove('flex');
-        document.body.style.overflow = '';
+        // Chỉ mở lại cuộn trang khi phía dưới không còn modal album nào đang mở
+        const albumModal = document.getElementById('albumModal');
+        if (!albumModal || albumModal.classList.contains('hidden')) document.body.style.overflow = '';
     }
+    restoreFocusAfterModal();
   }
 
   // Chuyển sang ảnh kế tiếp trong Lightbox
@@ -1239,13 +1320,23 @@ function setupDonateQrEffect() {
     if(modalImg) modalImg.src = lightboxList[currentIndex];
   }
 
-  // Lắng nghe phím tắt bàn phím khi xem ảnh phóng to
+  // Phím tắt: ESC đóng modal đang mở (lightbox trước, rồi tới modal album), mũi tên chuyển ảnh,
+  // Tab được giữ luẩn quẩn trong modal đang mở.
   document.addEventListener('keydown', function(event) {
-    const modal = document.getElementById('imageModal');
-    if (!modal || modal.classList.contains('hidden')) return;
+    const albumModal = document.getElementById('albumModal');
+    const imgModal = document.getElementById('imageModal');
+    const albumOpen = !!(albumModal && !albumModal.classList.contains('hidden'));
+    const lightboxOpen = !!(imgModal && !imgModal.classList.contains('hidden'));
 
-    if (event.key === 'Escape') closeModal();
-    else if (event.key === 'ArrowRight') nextImage();
+    if (event.key === 'Escape') {
+      if (lightboxOpen) { closeModal(); return; }   // lightbox nằm trên modal album
+      if (albumOpen) { closeAlbumModal(); }
+      return;
+    }
+    if (albumOpen) { trapFocusInside(event, albumModal); return; }
+    if (!lightboxOpen) return;
+    trapFocusInside(event, imgModal);
+    if (event.key === 'ArrowRight') nextImage();
     else if (event.key === 'ArrowLeft') prevImage();
   });
 

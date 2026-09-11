@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO & chia sẻ lên Facebook/Zalo (Open Graph / Twitter) -->
+    <meta name="description" content="Trang cá nhân của Giang Nguyễn — nhiếp ảnh, album hậu trường, meme và lời nhắn từ bạn bè.">
+    <meta name="author" content="Giang Nguyễn">
+    <meta name="theme-color" content="#2563eb">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Giang Nguyễn">
+    <meta property="og:title" content="Giang Nguyễn | Trang cá nhân">
+    <meta property="og:description" content="Trang cá nhân của Giang Nguyễn — nhiếp ảnh, album hậu trường, meme và lời nhắn từ bạn bè.">
+    <meta property="og:image" content="https://res.cloudinary.com/g9uxwrbl/image/upload/w_1200,q_80/album-bts-1.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:locale" content="vi_VN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Giang Nguyễn | Trang cá nhân">
+    <meta name="twitter:description" content="Trang cá nhân của Giang Nguyễn — nhiếp ảnh, album hậu trường, meme và lời nhắn từ bạn bè.">
+    <meta name="twitter:image" content="https://res.cloudinary.com/g9uxwrbl/image/upload/w_1200,q_80/album-bts-1.jpg">
     <title>Giang Nguyễn | Trang cá nhân</title>
     <link rel="icon" type="image/png" href="image/icon.jpg">
     <!-- Tối ưu: mở kết nối sớm tới các CDN để giảm độ trễ tải tài nguyên -->
@@ -317,7 +332,7 @@
 </form>
 
         <!-- Thông báo ngắn khi TỰ ĐỘNG lưu (ẩn; không còn hộp hướng dẫn thủ công) -->
-        <div id="autoSaveToast" class="fixed bottom-4 right-4 z-[110] hidden max-w-xs rounded-xl border px-3 py-2 text-xs font-medium shadow-lg"></div>
+        <div id="autoSaveToast" role="status" aria-live="polite" class="fixed bottom-4 right-4 z-[110] hidden max-w-xs rounded-xl border px-3 py-2 text-xs font-medium shadow-lg"></div>
 
         <!-- Danh sách hiển thị lời nhắn công khai -->
         <div class="relative z-50 lg:col-span-3 space-y-3">
@@ -436,7 +451,7 @@
 </script>
 
 <!-- Modal: Grid Album Chung -->
-<div id="albumModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
+<div id="albumModal" role="dialog" aria-modal="true" aria-labelledby="albumModalTitle" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden p-0 sm:p-4 transition-all">
     <div class="bg-surface w-full sm:max-w-2xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2 bg-gray-50/50">
             <div class="flex items-center gap-2 min-w-0">
@@ -464,7 +479,7 @@
 </div>
 
 <!-- Modal 2: Lightbox Phóng to ảnh -->
-<div id="imageModal" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4">
+<div id="imageModal" role="dialog" aria-modal="true" aria-label="Xem ảnh phóng to" class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center hidden p-4">
     <button type="button" onclick="closeModal()" class="absolute top-4 right-4 z-[80] text-white bg-black/70 hover:bg-black rounded-full p-3 shadow-lg cursor-pointer" aria-label="Đóng ảnh">
         <i class="ph ph-x text-2xl"></i>
     </button>

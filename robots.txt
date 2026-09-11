@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap cần địa chỉ website thật (tên miền). Khi đã có tên miền, thêm dòng:
+# Sitemap: https://ten-mien-cua-ban/sitemap.xml
