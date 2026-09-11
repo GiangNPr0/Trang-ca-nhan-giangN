@@ -744,14 +744,29 @@ function setupDonateQrEffect() {
   }
 
   function saveGoogleUser(user) {
+      // An toàn: phiên Google (kèm ID token JWT) lưu trong sessionStorage - tự xoá khi đóng trình duyệt,
+      // KHÔNG trong localStorage (vẫn tồn sau khôi phục). Dọn kẝiar lạ của localStorage.
       try {
-          if (user) localStorage.setItem('giang_google_user', JSON.stringify(user));
-          else localStorage.removeItem('giang_google_user');
+          if (user) sessionStorage.setItem('giang_google_user', JSON.stringify(user));
+          else sessionStorage.removeItem('giang_google_user');
       } catch (err) { console.warn('Không lưu được phiên Google:', err); }
+      try { localStorage.removeItem('giang_google_user'); } catch (err) {}
   }
   function loadGoogleUser() {
       try {
-          const raw = localStorage.getItem('giang_google_user');
+          // Đọc phiên từ sessionStorage; lần đầu (bản cua trong localStorage) tự đỌ rồi migrate → xoá cũ
+          let raw = null;
+          try { raw = sessionStorage.getItem('giang_google_user'); } catch (err) {}
+          if (!raw) {
+              try {
+                  const old = localStorage.getItem('giang_google_user');
+                  if (old) {
+                      sessionStorage.setItem('giang_google_user', old);
+                      localStorage.removeItem('giang_google_user');
+                      raw = old;
+                  }
+              } catch (err) {}
+          }
           if (!raw) return null;
           const saved = JSON.parse(raw);
           googleIdToken = saved && saved.idToken ? saved.idToken : null;
@@ -783,7 +798,7 @@ function setupDonateQrEffect() {
       saveGoogleUser({ ...googleUser, idToken: googleIdToken });
       updateGoogleAuthUI();
       renderMessages(galleryStore.messages);
-      showAutoSaveToast('✓ Đã đăng nhập: ' + googleUser.name + (isAdmin() ? ' (Admin)' : ''), true);
+      showAutoSaveToast('✓ Đã đăng nhập: ' + escapeHtml(googleUser.name) + (isAdmin() ? ' (Admin)' : ''), true);
   }
 
   function googleSignOut() {
