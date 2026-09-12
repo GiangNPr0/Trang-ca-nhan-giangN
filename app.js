@@ -745,7 +745,7 @@ function setupDonateQrEffect() {
 
   function saveGoogleUser(user) {
       // An toàn: phiên Google (kèm ID token JWT) lưu trong sessionStorage - tự xoá khi đóng trình duyệt,
-      // KHÔNG trong localStorage (vẫn tồn sau khôi phục). Dọn kẝiar lạ của localStorage.
+      // KHÔNG trong localStorage (vẫn tồn sau khôi phục). Dọn khoá cũ trong localStorage.
       try {
           if (user) sessionStorage.setItem('giang_google_user', JSON.stringify(user));
           else sessionStorage.removeItem('giang_google_user');

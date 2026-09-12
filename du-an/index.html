@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dự án cá nhân - Giang Nguyễn</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
+    <meta name="theme-color" content="#0b0f19">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Giang Nguyễn">
+    <meta property="og:title" content="Dự án cá nhân - Giang Nguyễn">
+    <meta property="og:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
+    <meta property="og:image" content="https://res.cloudinary.com/g9uxwrbl/image/upload/w_1200,q_80/album-bts-1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dự án cá nhân - Giang Nguyễn">
+    <meta name="twitter:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
+    <link rel="stylesheet" href="tailwind.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -47,12 +57,12 @@
 
         <!-- Thanh lọc danh mục (Tabs) -->
         <div class="flex flex-wrap gap-2 mb-8" id="filter-tabs">
-            <button onclick="filterCategory('all')" class="tab-btn active px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Tất cả</button>
-            <button onclick="filterCategory('anh')" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Ảnh</button>
-            <button onclick="filterCategory('giai-tri')" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Giải trí</button>
-            <button onclick="filterCategory('thoi-trang')" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Thời trang</button>
-            <button onclick="filterCategory('tvc')" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">TVC</button>
-            <button onclick="filterCategory('video-beauty')" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Video Beauty/Sản phẩm</button>
+            <button onclick="filterCategory('all', this)" class="tab-btn active px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Tất cả</button>
+            <button onclick="filterCategory('anh', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Ảnh</button>
+            <button onclick="filterCategory('giai-tri', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Giải trí</button>
+            <button onclick="filterCategory('thoi-trang', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Thời trang</button>
+            <button onclick="filterCategory('tvc', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">TVC</button>
+            <button onclick="filterCategory('video-beauty', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Video Beauty/Sản phẩm</button>
         </div>
 
         <!-- Lưới danh sách dự án -->
@@ -71,7 +81,7 @@
                     </div>
                 </div>
                 <div class="px-5 pb-5 pt-0">
-                    <a href="#" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem bộ sưu tập</a>
+                    <a href="../#albumSection" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem bộ sưu tập</a>
                 </div>
             </div>
 
@@ -88,7 +98,7 @@
                     </div>
                 </div>
                 <div class="px-5 pb-5 pt-0">
-                    <a href="#" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
+                    <a href="https://www.facebook.com/n.giang62/reels/" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
                 </div>
             </div>
 
@@ -105,7 +115,7 @@
                     </div>
                 </div>
                 <div class="px-5 pb-5 pt-0">
-                    <a href="#" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
+                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
                 </div>
             </div>
 
@@ -122,7 +132,7 @@
                     </div>
                 </div>
                 <div class="px-5 pb-5 pt-0">
-                    <a href="#" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
+                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
                 </div>
             </div>
 
@@ -139,7 +149,7 @@
                     </div>
                 </div>
                 <div class="px-5 pb-5 pt-0">
-                    <a href="#" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
+                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
                 </div>
             </div>
 
@@ -153,21 +163,23 @@
 
     <!-- Script xử lý bộ lọc tab -->
     <script>
-        function filterCategory(category) {
+        function filterCategory(category, btn) {
             // Cập nhật trạng thái active cho nút bấm
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
 
             // Lọc hiển thị các item dự án
-            const items = document.querySelectorAll('.project-item');
-            items.forEach(item => {
-                if (category === 'all' || item.getAttribute('data-category') === category) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+            document.querySelectorAll('.project-item').forEach(item => {
+                item.style.display =
+                    (category === 'all' || item.getAttribute('data-category') === category) ? 'flex' : 'none';
             });
+        }
+
+        // Mục chưa có trang chi tiết: nhấn chỉ hiển thị thông báo, không nhảy đi đâu cả
+        function comingSoon(btn) {
+            if (btn.textContent.includes('Sắp ra mắt')) return;
+            btn.textContent = 'Sắp ra mắt ✨';
+            setTimeout(() => { btn.textContent = 'Xem chi tiết'; }, 2000);
         }
     </script>
 </body>
