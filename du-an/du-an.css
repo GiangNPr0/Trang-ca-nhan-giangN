@@ -193,6 +193,8 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
     background: #111827;
     cursor: pointer;
 }
+/* Media DỌC (ảnh/video 9:16) → bìa đổi sang khung dọc 4/5 để thấy đúng dáng, không bị cắt ngang */
+.duan-cover.is-portrait { aspect-ratio: 4 / 5; }
 .duan-cover img,
 .duan-thumb img,
 .duan-media-preview img {
@@ -317,6 +319,15 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
     border-radius: 0.9rem;
     background: #000000;
 }
+/* Media DỌC → khung xem thành khung dọc 9/16, canh giữa, cao tối đa ~72% màn hình */
+.duan-viewer.is-portrait {
+    width: auto;
+    height: min(72vh, 40rem);
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    aspect-ratio: 9 / 16;
+}
 .duan-viewer img {
     position: absolute;
     inset: 0;
@@ -367,6 +378,7 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
 .duan-nav--next { right: 0.5rem; }
 .duan-thumbs {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.125rem;
     overflow-x: auto;
@@ -386,6 +398,8 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
     background: #1f2937;
     cursor: pointer;
 }
+/* Thumbnail media DỌC → ô dọc 9/16 (giống lưới chọn ảnh của Facebook/Instagram) */
+.duan-thumb.is-portrait { width: 3.4rem; height: 6rem; }
 .duan-thumb.is-active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
 .duan-thumb-icon {
     position: absolute;
@@ -457,6 +471,9 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
     background: #1f2937;
 }
 .duan-media-preview { position: relative; height: 5.5rem; background: linear-gradient(135deg, #1f2937, #0f172a); }
+/* Ô xem trước trong form: media DỌC thì khung cao hơn và hiện trọn ảnh (không cắt) */
+.duan-media-item.is-portrait .duan-media-preview { height: 8.5rem; }
+.duan-media-item.is-portrait .duan-media-preview img { object-fit: contain; }
 .duan-media-fallback {
     position: absolute;
     inset: 0;
@@ -541,9 +558,17 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
 /* ==================== Khung chờ nút Google (GIS) ==================== */
 .duan-google-slot { display: flex; align-items: center; min-height: 40px; }
 
+/* ==================== Đổi khung dọc/ngang: chuyển mượt, không giật ==================== */
+/* Khi media tải xong, JS mới biết tỉ lệ thật và đổi khung → cho chuyển tiếp nhẹ để mắt không bị giật */
+.duan-cover { transition: aspect-ratio 0.25s ease; }
+.duan-thumb { transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+.duan-viewer { transition: aspect-ratio 0.25s ease, width 0.25s ease, height 0.25s ease; }
+.duan-media-preview { transition: height 0.2s ease; }
+
 /* ==================== Giảm chuyển động cho người dùng cần ==================== */
 @media (prefers-reduced-motion: reduce) {
     .project-card, .duan-cover img, .duan-play i, .duan-nav, .duan-btn { transition: none !important; }
+    .duan-cover, .duan-thumb, .duan-viewer, .duan-media-preview { transition: none !important; }
     .project-card:hover { transform: none; }
     .project-card:hover .duan-cover img { transform: none; }
 }

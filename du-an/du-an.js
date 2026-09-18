@@ -2,6 +2,9 @@
  * du-an/du-an.js — Logic "Kho Dự án & Danh mục" cho trang du-an/index.html
  *
  * NGƯỜI XEM : xem dự án theo danh mục, xem ảnh (lightbox) và video / YouTube / Facebook ngay trên web.
+ *             Khung hiển thị TỰ ĐỔI THEO TỈ LỆ: media dọc (9:16) → khung dọc, media ngang → khung ngang
+ *             ở bìa dự án, dải thumbnail, khung xem và ô xem trước trong form (xem mục
+ *             "NHẬN BIẾT MEDIA DỌC / NGANG" bên dưới).
  * QUẢN TRỊ  : đăng nhập Google (email nằm trong danh sách ADMIN) rồi thêm/sửa/xoá dự án và tải
  *             ẢNH/VIDEO TRỰC TIẾP TỪ WEB (lên Cloudinary) hoặc dán link có sẵn (YouTube, Facebook,
  *             Vimeo, Google Drive, link ảnh/video trực tiếp).
@@ -120,6 +123,68 @@ function duanCleanLink(value) {
     if (/^[a-z0-9.-]+\.[a-z]{2,}(\/|$|\?|#)/i.test(url)) return 'https://' + url;
     return 'https://' + url;
 }
+// ==================== NHẬN BIẾT MEDIA DỌC / NGANG (tối ưu hiển thị thumbnail) ====================
+// Bìa dự án, dải thumbnail, khung xem và ô xem trước trong form đều tự đổi khung theo tỉ lệ thật:
+//   • Biết trước tỉ lệ  : upload xong Cloudinary trả về width/height (lưu vào `w`/`h` của media)
+//                         hoặc file trong máy (đọc được kích thước ảnh/video trước khi tải lên).
+//   • Chưa biết tỉ lệ   : media cũ / link dán từ web → tạm để khung NGANG, khi ảnh hoặc video
+//                         tải xong thì đo naturalWidth/naturalHeight rồi đổi khung ngay; kết quả
+//                         được nhớ trong phiên (duanRatioCache) nên lần sau hiện đúng ngay lập tức.
+//   • Biết chắc là dọc  : link YouTube Shorts, Facebook Reels → khung dọc luôn.
+const duanRatioCache = {};   // key → 'portrait' | 'landscape' (chỉ trong phiên, khoá theo URL)
+
+// Khoá ngắn, an toàn cho CSS selector (data-duan-media="...") từ URL media
+function duanRatioKey(url) {
+    const text = String(url || '');
+    let hash = 0;
+    for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) | 0;
+    return 'r' + Math.abs(hash).toString(36);
+}
+
+// 'portrait' (dọc) hay 'landscape' (ngang) cho 1 media
+function duanMediaOrientation(media) {
+    if (!media || !media.url) return 'landscape';
+    const w = Number(media.w) || 0;
+    const h = Number(media.h) || 0;
+    if (w > 0 && h > 0) return w >= h ? 'landscape' : 'portrait';
+    const cached = duanRatioCache[duanRatioKey(media.url)];
+    if (cached) return cached;
+    const detected = duanDetectMedia(media.url);
+    if (detected && detected.ratio) return detected.ratio;  // Shorts / Reels: chắc chắn là dọc
+    return 'landscape';
+}
+
+// Đã biết tỉ lệ (kèm ảnh/video) hay chưa → quyết định có cần gắn hàm đo khi tải xong hay không
+function duanRatioKnown(media) {
+    if (!media) return true;
+    if ((Number(media.w) || 0) > 0 && (Number(media.h) || 0) > 0) return true;
+    if (duanRatioCache[duanRatioKey(media.url)]) return true;
+    const detected = duanDetectMedia(media.url);
+    return !!(detected && detected.ratio);
+}
+
+// Hàm đo gắn vào <img onload> / <video onloadedmetadata> (chỉ gắn khi tỉ lệ chưa biết)
+function duanRatioProbeAttrs(media) {
+    if (!media || !media.url || duanRatioKnown(media)) return '';
+    const key = duanRatioKey(media.url);
+    const handler = media.type === 'video' ? 'onloadedmetadata' : 'onload';
+    return ' ' + handler + '="duanMeasureRatio(this, \'' + key + '\')"';
+}
+
+// Ảnh/video đã tải xong → đo tỉ lệ thật rồi đổi khung của mọi ô đang hiển thị cùng media đó
+function duanMeasureRatio(el, key) {
+    if (!el || !key) return;
+    const w = el.naturalWidth || el.videoWidth || 0;
+    const h = el.naturalHeight || el.videoHeight || 0;
+    if (!w || !h) return;
+    const orientation = w >= h ? 'landscape' : 'portrait';
+    if (duanRatioCache[key] === orientation) return;
+    duanRatioCache[key] = orientation;
+    document.querySelectorAll('[data-duan-media="' + key + '"]').forEach(node => {
+        node.classList.toggle('is-portrait', orientation === 'portrait');
+    });
+}
+
 // ==================== NHẬN DẠNG ẢNH / VIDEO TỪ LINK ====================
 // Từ 1 URL bất kỳ (ảnh, video, YouTube, Facebook, Vimeo, Google Drive) → biết cách hiển thị:
 //   'image' : hiện <img>
@@ -136,6 +201,8 @@ function duanDetectMedia(rawUrl) {
             type: 'embed',
             provider: 'youtube',
             url: url,
+            // YouTube Shorts là video dọc → khung dọc luôn, không cần đo
+            ratio: /youtube(?:-nocookie)?\.com\/shorts\//i.test(url) ? 'portrait' : '',
             embedUrl: 'https://www.youtube-nocookie.com/embed/' + youtube[1] + '?rel=0&modestbranding=1',
             thumb: 'https://i.ytimg.com/vi/' + youtube[1] + '/hqdefault.jpg'
         };
@@ -150,6 +217,8 @@ function duanDetectMedia(rawUrl) {
             provider: 'facebook',
             url: url,
             thumb: '',
+            // Facebook Reels là video dọc → khung dọc
+            ratio: /\/reels?\//i.test(lower) ? 'portrait' : '',
             embedUrl: 'https://www.facebook.com/plugins/video.php?show_text=false&width=734&href=' + encodeURIComponent(url)
         };
     }
@@ -207,7 +276,14 @@ function duanNormalizeMedia(item) {
     if (typeof url !== 'string' || !url.trim()) return null;
     const detected = duanDetectMedia(url);
     if (!detected) return null;
-    return { url: detected.url, type: detected.type };
+    // w/h = kích thước thật (Cloudinary trả về khi upload) → dùng để chọn khung dọc/ngang ngay,
+    // không phải chờ ảnh tải xong mới biết. Media cũ không có w/h thì tự đo khi hiển thị.
+    return {
+        url: detected.url,
+        type: detected.type,
+        w: Math.max(0, Number(item && item.w) || 0),
+        h: Math.max(0, Number(item && item.h) || 0)
+    };
 }
 
 function duanNormalizeProject(item) {
@@ -683,13 +759,17 @@ function duanRenderGrid() {
     if (empty) empty.classList.toggle('hidden', list.length > 0);
     grid.innerHTML = list.map((project, index) => duanCardHtml(project, index)).join('');
 }
-// Thẻ dự án: bìa (đã tối ưu dung lượng) + badge danh mục + số lượng ảnh/video
+// Thẻ dự án: bìa tự chọn khung dọc/ngang theo media đầu tiên + badge danh mục + số lượng ảnh/video
 function duanCardHtml(project, index) {
     const cat = duanCategoryInfo(project.category);
-    const cover = project.media.length ? duanDetectMedia(project.media[0].url) : null;
+    const coverItem = project.media.length ? project.media[0] : null;
+    const cover = coverItem ? duanDetectMedia(coverItem.url) : null;
     const counts = duanMediaCounts(project.media);
     const playable = !!(cover && cover.type !== 'image');
     const coverSrc = cover && cover.thumb ? cover.thumb : '';
+    // Bìa dọc (9:16) → khung dọc 4/5; bìa ngang → khung ngang 16/9
+    const coverPortrait = coverItem ? duanMediaOrientation(coverItem) === 'portrait' : false;
+    const coverProbe = coverItem ? duanRatioProbeAttrs(coverItem) : '';
     // 3 bìa đầu nằm trong màn hình đầu tiên → tải ngay; phần còn lại để trình duyệt lazy-load
     const loadingAttr = index < 3 ? '' : ' loading="lazy"';
 
@@ -700,9 +780,11 @@ function duanCardHtml(project, index) {
 
     return '' +
     '<article class="glass-card duan-card project-card" data-category="' + duanEscape(cat.key) + '">' +
-        '<button type="button" class="duan-cover" data-duan-open="' + duanEscape(project.id) + '" aria-label="Xem dự án ' + duanEscape(project.title) + '">' +
+        '<button type="button" class="duan-cover' + (coverPortrait ? ' is-portrait' : '') + '" data-duan-open="' + duanEscape(project.id) + '"' +
+            (coverItem ? ' data-duan-media="' + duanRatioKey(coverItem.url) + '"' : '') +
+            ' aria-label="Xem dự án ' + duanEscape(project.title) + '">' +
             '<span class="duan-cover-placeholder"><i class="ph ' + (playable ? 'ph-film-slate' : 'ph-image') + '" aria-hidden="true"></i></span>' +
-            (coverSrc ? '<img src="' + duanEscape(coverSrc) + '" alt="' + duanEscape(project.title) + '"' + loadingAttr + ' decoding="async" onerror="this.remove()">' : '') +
+            (coverSrc ? '<img src="' + duanEscape(coverSrc) + '" alt="' + duanEscape(project.title) + '"' + loadingAttr + ' decoding="async"' + coverProbe + ' onerror="this.remove()">' : '') +
             '<span class="duan-cover-shade"></span>' +
             '<span class="duan-cover-tags"><span class="duan-badge ' + cat.color + '">' + duanEscape(cat.label) + '</span></span>' +
             (playable ? '<span class="duan-play"><i class="ph-fill ph-play-circle" aria-hidden="true"></i></span>' : '') +
@@ -820,6 +902,8 @@ function duanRenderViewer(project) {
 
     if (!list.length) {
         viewer.innerHTML = '<div class="duan-viewer-empty"><i class="ph ph-image-square" style="font-size:2rem" aria-hidden="true"></i><span>Dự án chưa có ảnh/video</span></div>';
+        viewer.classList.remove('is-portrait');
+        delete viewer.dataset.duanMedia;
         if (counter) counter.textContent = '';
         if (typeChip) typeChip.classList.add('hidden');
         duanToggleViewerNav(false);
@@ -827,15 +911,22 @@ function duanRenderViewer(project) {
     }
 
     duanViewIndex = Math.min(Math.max(0, duanViewIndex), list.length - 1);
-    const media = duanDetectMedia(list[duanViewIndex].url);
+    const item = list[duanViewIndex];
+    const media = duanDetectMedia(item.url);
     if (!media) return;
+
+    // Khung xem đổi theo tỉ lệ: media dọc → khung dọc 9/16; media ngang → khung ngang 16/9.
+    // Nếu chưa biết tỉ lệ thì tạm ngang và tự đổi ngay khi ảnh/video tải xong (duanMeasureRatio).
+    viewer.dataset.duanMedia = duanRatioKey(item.url);
+    viewer.classList.toggle('is-portrait', duanMediaOrientation(item) === 'portrait');
+    const probe = duanRatioProbeAttrs(item);
 
     if (media.type === 'image') {
         viewer.innerHTML = '<img src="' + duanEscape(duanThumbUrl(media.url, DUAN_THUMB_WIDTH.viewer)) + '" alt="' +
-            duanEscape(project.title) + ' - ảnh ' + (duanViewIndex + 1) + '" data-duan-zoom="1" onerror="this.remove()">';
+            duanEscape(project.title) + ' - ảnh ' + (duanViewIndex + 1) + '" data-duan-zoom="1"' + probe + ' onerror="this.remove()">';
     } else if (media.type === 'video') {
         viewer.innerHTML = '<video src="' + duanEscape(media.url) + '" controls playsinline preload="metadata"' +
-            (media.thumb ? ' poster="' + duanEscape(media.thumb) + '"' : '') + '></video>';
+            (media.thumb ? ' poster="' + duanEscape(media.thumb) + '"' : '') + probe + '></video>';
     } else {
         viewer.innerHTML = '<iframe src="' + duanEscape(media.embedUrl) + '" title="' + duanEscape(project.title) +
             '" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
@@ -874,14 +965,18 @@ function duanRenderThumbs(project) {
         if (!media) return '';
         const label = media.type === 'image' ? 'ẢNH' : (media.type === 'video' ? 'VIDEO' : String(media.provider || 'VIDEO').toUpperCase());
         const icon = media.type === 'image' ? 'ph-image' : 'ph-play';
+        // Thumbnail dọc → ô dọc 9/16; ngang → ô ngang. Chưa biết tỉ lệ thì tự đo khi ảnh tải xong.
+        const portrait = duanMediaOrientation(item) === 'portrait';
+        const probe = duanRatioProbeAttrs(item);
         const tools = admin ? '<span class="duan-thumb-tools">' +
             (index > 0 ? '<button type="button" class="duan-thumb-btn" data-duan-thumb-cover="' + index + '" title="Đặt làm ảnh bìa"><i class="ph ph-image-square" aria-hidden="true"></i></button>' : '') +
             '<button type="button" class="duan-thumb-btn duan-thumb-btn--del" data-duan-thumb-del="' + index + '" title="Xoá khỏi dự án"><i class="ph ph-trash" aria-hidden="true"></i></button>' +
         '</span>' : '';
         return '<div class="duan-thumb-cell">' +
-            '<button type="button" class="duan-thumb' + (index === duanViewIndex ? ' is-active' : '') + '" data-duan-thumb="' + index + '" aria-label="Xem ' + duanEscape(label) + ' ' + (index + 1) + '">' +
+            '<button type="button" class="duan-thumb' + (index === duanViewIndex ? ' is-active' : '') + (portrait ? ' is-portrait' : '') +
+                '" data-duan-thumb="' + index + '" data-duan-media="' + duanRatioKey(item.url) + '" aria-label="Xem ' + duanEscape(label) + ' ' + (index + 1) + '">' +
                 '<span class="duan-thumb-icon"><i class="ph ' + icon + '" aria-hidden="true"></i></span>' +
-                (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
+                (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async"' + probe + ' onerror="this.remove()">' : '') +
                 '<span class="duan-thumb-tag">' + duanEscape(label) + '</span>' +
             '</button>' + tools +
         '</div>';
@@ -1034,10 +1129,13 @@ function duanRenderFormMedia() {
         const media = duanDetectMedia(item.url) || { type: 'image', thumb: '' };
         const label = media.type === 'image' ? 'ẢNH' : (media.type === 'video' ? 'VIDEO' : String(media.provider || 'NHÚNG').toUpperCase());
         const icon = media.type === 'image' ? 'ph-image' : 'ph-video-camera';
-        return '<div class="duan-media-item">' +
+        // Media dọc → ô xem trước cao hơn và hiện trọn ảnh; media ngang giữ khung ngang
+        const portrait = duanMediaOrientation(item) === 'portrait';
+        const probe = duanRatioProbeAttrs(item);
+        return '<div class="duan-media-item' + (portrait ? ' is-portrait' : '') + '" data-duan-media="' + duanRatioKey(item.url) + '">' +
             '<div class="duan-media-preview">' +
                 '<span class="duan-media-fallback"><i class="ph ' + icon + '" aria-hidden="true"></i></span>' +
-                (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
+                (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async"' + probe + ' onerror="this.remove()">' : '') +
                 '<span class="duan-chip duan-media-type">' + duanEscape(label) + (index === 0 ? ' · BÌA' : '') + '</span>' +
             '</div>' +
             '<div class="duan-media-actions">' +
@@ -1074,7 +1172,12 @@ async function duanAddUrl() {
         if (status) status.textContent = 'Đang tải link về kho Cloudinary...';
         try {
             const hosted = await duanUploadRemote(url, type);
-            duanFormMedia.push({ url: hosted, type: type });
+            duanFormMedia.push({
+                url: hosted.url,
+                type: type,
+                w: hosted.width || 0,
+                h: hosted.height || 0
+            });
             duanRenderFormMedia();
             if (status) status.textContent = '';
             duanToast('✓ Đã tải link về Cloudinary và thêm vào dự án', true);
@@ -1105,8 +1208,13 @@ async function duanHandleFiles(input) {
         const isVideo = file.type.indexOf('video/') === 0 || /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(file.name);
         if (status) status.textContent = 'Đang tải ' + (i + 1) + '/' + files.length + ': ' + file.name;
         try {
-            const url = await duanUploadMediaFile(file, isVideo);
-            duanFormMedia.push({ url: url, type: isVideo ? 'video' : 'image' });
+            const uploaded = await duanUploadMediaFile(file, isVideo);
+            duanFormMedia.push({
+                url: uploaded.url,
+                type: isVideo ? 'video' : 'image',
+                w: uploaded.width || 0,
+                h: uploaded.height || 0
+            });
             done += 1;
             duanRenderFormMedia();
         } catch (err) {
@@ -1140,8 +1248,13 @@ async function duanUploadFilesIntoProject(project, files, statusEl) {
         const isVideo = file.type.indexOf('video/') === 0 || /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(file.name);
         if (statusEl) statusEl.textContent = 'Đang tải ' + (i + 1) + '/' + files.length + ': ' + file.name;
         try {
-            const url = await duanUploadMediaFile(file, isVideo);
-            project.media.push({ url: url, type: isVideo ? 'video' : 'image' });
+            const uploaded = await duanUploadMediaFile(file, isVideo);
+            project.media.push({
+                url: uploaded.url,
+                type: isVideo ? 'video' : 'image',
+                w: uploaded.width || 0,
+                h: uploaded.height || 0
+            });
             done += 1;
         } catch (err) {
             console.error('Tải media lên thất bại:', err);
@@ -1284,21 +1397,55 @@ async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset) {
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
-    return data.secure_url;
+    return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
 
 // ==================== TẢI ẢNH / VIDEO LÊN CLOUDINARY ====================
 // Ảnh: nén trong canvas rồi đưa lên dạng image. Video: gửi nguyên file dạng video
 // (Cloudinary gói free cho tối đa 100MB mỗi file, nên giới hạn ở mức đó).
+// Trả về { url, width, height } để biết ngay media là dọc hay ngang.
 async function duanUploadMediaFile(file, isVideo) {
     if (isVideo) {
         if (file.size > DUAN_VIDEO_MAX_BYTES) throw new Error('Video tối đa 100MB');
-        return duanUploadWithFallback(file, 'du-an-video', 'video');
+        const localSize = await duanReadVideoSize(file);
+        const uploaded = await duanUploadWithFallback(file, 'du-an-video', 'video');
+        return {
+            url: uploaded.url,
+            width: uploaded.width || localSize.w,
+            height: uploaded.height || localSize.h
+        };
     }
     if (file.type.indexOf('image/') !== 0) throw new Error('Chỉ nhận file ảnh hoặc video');
     if (file.size > 20 * 1024 * 1024) throw new Error('Ảnh gốc tối đa 20MB');
-    const blob = await duanCompressImage(file, DUAN_IMAGE_MAX_DIMENSION, DUAN_IMAGE_MAX_BYTES);
-    return duanUploadWithFallback(blob, 'du-an-anh', 'image');
+    const compressed = await duanCompressImage(file, DUAN_IMAGE_MAX_DIMENSION, DUAN_IMAGE_MAX_BYTES);
+    const uploaded = await duanUploadWithFallback(compressed.blob, 'du-an-anh', 'image');
+    return {
+        url: uploaded.url,
+        width: uploaded.width || compressed.width,
+        height: uploaded.height || compressed.height
+    };
+}
+
+// Đọc kích thước video ngay trong máy trước khi tải lên (video dọc/ngang)
+function duanReadVideoSize(file) {
+    return new Promise(resolve => {
+        let objectUrl = '';
+        let finished = false;
+        const finish = size => {
+            if (finished) return;
+            finished = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            resolve(size);
+        };
+        try { objectUrl = URL.createObjectURL(file); } catch (err) { resolve({ w: 0, h: 0 }); return; }
+        const probe = document.createElement('video');
+        probe.preload = 'metadata';
+        probe.muted = true;
+        probe.onloadedmetadata = () => finish({ w: probe.videoWidth || 0, h: probe.videoHeight || 0 });
+        probe.onerror = () => finish({ w: 0, h: 0 });
+        setTimeout(() => finish({ w: 0, h: 0 }), 8000);
+        probe.src = objectUrl;
+    });
 }
 
 // Thử preset riêng của Kho Dự án trước; nếu preset đó chưa được tạo thì dùng preset của trang chủ
@@ -1338,10 +1485,12 @@ async function duanUploadToCloudinary(payload, resourceType, namePrefix, preset)
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
-    return data.secure_url;
+    // Trả kèm kích thước thật để bìa/thumbnail chọn đúng khung dọc hay ngang ngay từ đầu
+    return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
 
-// Nén ảnh trong canvas: giảm cạnh dài rồi hạ dần chất lượng cho tới khi ≤ maxBytes
+// Nén ảnh trong canvas: giảm cạnh dài rồi hạ dần chất lượng cho tới khi ≤ maxBytes.
+// Trả về { blob, width, height } để biết ảnh dọc hay ngang.
 function duanCompressImage(file, maxDimension, maxBytes) {
     const maxDim = maxDimension || DUAN_IMAGE_MAX_DIMENSION;
     const maxSize = maxBytes || DUAN_IMAGE_MAX_BYTES;
@@ -1367,7 +1516,8 @@ function duanCompressImage(file, maxDimension, maxBytes) {
                         attempt(0.7, resizeAttempts + 1);
                         return;
                     }
-                    resolve(blob);
+                    // Trả kèm kích thước cuối cùng của ảnh đã nén (dọc/ngang) để chọn khung hiển thị
+                    resolve({ blob: blob, width: canvas.width, height: canvas.height });
                 }, 'image/jpeg', quality);
             };
             attempt(0.82, 0);
@@ -1395,7 +1545,7 @@ function duanSubmitForm(event) {
         description: descInput ? descInput.value.trim().slice(0, 600) : '',
         link: linkInput ? duanCleanLink(linkInput.value.trim()) : '',
         linkLabel: linkLabelInput ? linkLabelInput.value.trim().slice(0, 40) : '',
-        media: duanFormMedia.map(m => ({ url: m.url }))
+        media: duanFormMedia.map(m => ({ url: m.url, w: m.w || 0, h: m.h || 0 }))
     };
 
     let message = '✓ Đã thêm dự án mới';
