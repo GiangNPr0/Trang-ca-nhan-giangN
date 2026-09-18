@@ -19,13 +19,18 @@
  * ========================================================================== */
 
 // ==================== CẤU HÌNH ====================
-// Cloudinary: giữ đúng thông tin đang dùng ở trang chủ (app.js). Nên tạo thêm 1 upload preset
-// UNSIGNED tên `GiangNweb_duan` (Settings → Upload → Add upload preset, Folder = du-an) để ảnh/video
-// của Kho Dự án nằm riêng một thư mục. Nếu preset đó chưa tồn tại, code tự thử lại bằng preset trang chủ.
+// Cloudinary: giữ đúng thông tin đang dùng ở trang chủ (app.js). Preset Unsigned dành cho Kho Dự án là
+// `GiangNweb_duan` (nếu preset đó chưa tồn tại, code tự thử lại bằng preset của trang chủ).
 const DUAN_CLOUDINARY_CLOUD_NAME = 'g9uxwrbl';
 const DUAN_CLOUDINARY_PRESET = 'GiangNweb_duan';
 const DUAN_CLOUDINARY_FALLBACK_PRESET = 'GiangNweb';
 const DUAN_CLOUDINARY_FOLDER = 'du-an';
+// MỖI DỰ ÁN MỘT THƯ MỤC RIÊNG trên Cloudinary: `du-an/<ten-du-an>` (slug không dấu lấy từ tiêu đề).
+// LƯU Ý QUAN TRỌNG: upload preset Unsigned phải để Folder = **Dynamic** (hoặc bỏ trống) và tài khoản
+// bật Settings → Media Library → Dynamic folders. Nếu preset đang CỐ ĐỊNH Folder thì Cloudinary sẽ
+// BỎ QUA thư mục gửi kèm (mọi ảnh/video vẫn nằm ở folder cố định) — code sẽ cảnh báo ngay khi upload.
+// Đặt false nếu muốn tất cả media nằm chung trong DUAN_CLOUDINARY_FOLDER.
+const DUAN_FOLDER_PER_PROJECT = true;
 const DUAN_IMAGE_MAX_DIMENSION = 1920;
 const DUAN_IMAGE_MAX_BYTES = 1200 * 1024;        // ảnh sau khi nén (~1.2MB)
 const DUAN_VIDEO_MAX_BYTES = 100 * 1024 * 1024;  // giới hạn 1 file của Cloudinary gói free
@@ -64,6 +69,7 @@ let duanOpenProjectId = null;
 let duanViewIndex = 0;
 let duanFormMedia = [];
 let duanFormEditId = null;
+let duanFormDraftId = '';   // id dự kiến cho dự án mới (dùng làm tên thư mục khi tiêu đề còn trống)
 let duanLightboxList = [];
 let duanLightboxIndex = 0;
 let duanFocusedBefore = null;
@@ -361,6 +367,60 @@ function duanDefaultProjects() {
 
 function duanProjectById(id) {
     return duanProjects.find(p => p.id === id) || null;
+}
+
+// ==================== THƯ MỤC CLOUDINARY THEO TỪNG DỰ ÁN ====================
+// Tiêu đề tiếng Việt → slug không dấu dùng làm tên thư mục: "Bộ sưu tập nhiếp ảnh" → bo-suu-tap-nhiep-anh
+function duanSlug(text) {
+    return String(text || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')      // bỏ dấu thanh (á, ệ, ữ…)
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60)
+        .replace(/-+$/g, '');
+}
+
+// Thư mục Cloudinary của 1 dự án: `du-an/<slug-tiêu-đề>` (dự phòng: slug theo id, cuối cùng là chua-dat-ten)
+function duanProjectFolder(project) {
+    if (!DUAN_FOLDER_PER_PROJECT) return DUAN_CLOUDINARY_FOLDER;
+    const name = duanSlug(project && project.title) ||
+        duanSlug(project && project.id) ||
+        'chua-dat-ten';
+    return DUAN_CLOUDINARY_FOLDER ? DUAN_CLOUDINARY_FOLDER + '/' + name : name;
+}
+
+// Thư mục dùng khi đang thêm media TRONG FORM: theo dự án đang sửa, hoặc theo tiêu đề đang gõ (dự án mới)
+function duanFormTargetFolder() {
+    if (duanFormEditId) {
+        const project = duanProjectById(duanFormEditId);
+        if (project) return duanProjectFolder(project);
+    }
+    const titleInput = duanEl('duanFormTitleInput');
+    return duanProjectFolder({ title: titleInput ? titleInput.value : '', id: duanFormDraftId });
+}
+
+// Hiện trong form: ảnh/video sắp tải lên sẽ nằm ở thư mục nào trên Cloudinary
+function duanRenderFormFolderHint() {
+    const hint = duanEl('duanFormFolderHint');
+    if (!hint) return;
+    hint.textContent = 'Thư mục Cloudinary: ' + duanFormTargetFolder() +
+        (DUAN_FOLDER_PER_PROJECT ? '  (mỗi dự án một thư mục riêng)' : '');
+}
+
+// Preset "Fixed folder" sẽ khiến Cloudinary bỏ qua thư mục gửi kèm → cảnh báo 1 lần cho admin biết
+let duanWarnedFolderMismatch = false;
+function duanCheckUploadFolder(data, targetFolder) {
+    if (duanWarnedFolderMismatch || !DUAN_FOLDER_PER_PROJECT || !targetFolder) return;
+    const landed = String((data && (data.asset_folder || data.folder)) || '').replace(/\/+$/, '');
+    if (!landed || landed === targetFolder) return;
+    duanWarnedFolderMismatch = true;
+    console.warn('Cloudinary xếp media vào "' + landed + '" thay vì "' + targetFolder +
+        '": upload preset đang cố định Folder. Đổi preset sang Folder = Dynamic để chia thư mục theo dự án.');
+    duanToast('⚠ Media vào "' + landed + '" thay vì "' + targetFolder + '": preset Cloudinary đang cố định Folder — đổi sang Dynamic để chia thư mục theo dự án', false);
 }
 
 // Admin sửa/xoá danh mục MẶC ĐỊNH → các mục đó thành dữ liệu thật để lần lưu sau ghi vào store
@@ -887,6 +947,13 @@ function duanRenderProjectModal(id) {
         if (linkTextEl) linkTextEl.textContent = project.linkLabel || 'Mở liên kết';
     }
 
+    // Admin: cho biết ảnh/video của dự án này nằm ở thư mục nào trên Cloudinary
+    const folderChip = duanEl('duanProjectFolderChip');
+    if (folderChip) {
+        folderChip.textContent = 'Cloudinary: ' + duanProjectFolder(project);
+        folderChip.classList.toggle('hidden', !duanIsAdmin());
+    }
+
     duanRenderAdminTools();
     duanRenderViewer(project);
     duanRenderThumbs(project);
@@ -1081,7 +1148,9 @@ function duanOpenForm(id, focusMedia) {
     if (!duanEnsureAdmin()) return;
     const project = id ? duanProjectById(id) : null;
     duanFormEditId = project ? project.id : null;
-    duanFormMedia = project ? project.media.map(m => ({ url: m.url, type: m.type })) : [];
+    // Dự án mới: chuẩn bị id trước để dùng làm tên thư mục Cloudinary khi tiêu đề còn trống
+    duanFormDraftId = project ? '' : duanNewId();
+    duanFormMedia = project ? project.media.map(m => ({ url: m.url, w: m.w, h: m.h })) : [];
 
     const heading = duanEl('duanFormHeading');
     if (heading) heading.textContent = project ? 'Sửa dự án' : 'Thêm dự án';
@@ -1101,6 +1170,7 @@ function duanOpenForm(id, focusMedia) {
     if (urlInput) urlInput.value = '';
 
     duanRenderFormMedia();
+    duanRenderFormFolderHint();
     if (!duanIsFormOpen()) duanFocusedBefore = document.activeElement;
     duanShow(duanEl('duanFormModal'));
     document.body.style.overflow = 'hidden';
@@ -1113,6 +1183,7 @@ function duanOpenForm(id, focusMedia) {
 function duanCloseForm() {
     duanHide(duanEl('duanFormModal'));
     duanFormEditId = null;
+    duanFormDraftId = '';
     duanFormMedia = [];
     if (!duanIsLightboxOpen()) document.body.style.overflow = duanOpenProjectId ? 'hidden' : '';
     duanRestoreFocus();
@@ -1171,7 +1242,8 @@ async function duanAddUrl() {
     if (canUploadRemote) {
         if (status) status.textContent = 'Đang tải link về kho Cloudinary...';
         try {
-            const hosted = await duanUploadRemote(url, type);
+            // Media được xếp vào thư mục riêng của dự án đang thêm/sửa
+            const hosted = await duanUploadRemote(url, type, duanFormTargetFolder());
             duanFormMedia.push({
                 url: hosted.url,
                 type: type,
@@ -1202,13 +1274,14 @@ async function duanHandleFiles(input) {
     if (!files.length) return;
 
     const status = duanEl('duanMediaStatus');
+    const folder = duanFormTargetFolder();   // thư mục riêng của dự án (theo tiêu đề đang gõ nếu là dự án mới)
     let done = 0;
     for (let i = 0; i < files.length; i += 1) {
         const file = files[i];
         const isVideo = file.type.indexOf('video/') === 0 || /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(file.name);
         if (status) status.textContent = 'Đang tải ' + (i + 1) + '/' + files.length + ': ' + file.name;
         try {
-            const uploaded = await duanUploadMediaFile(file, isVideo);
+            const uploaded = await duanUploadMediaFile(file, isVideo, folder);
             duanFormMedia.push({
                 url: uploaded.url,
                 type: isVideo ? 'video' : 'image',
@@ -1240,15 +1313,17 @@ function duanRenderQuickTarget() {
     select.classList.toggle('hidden', !duanIsAdmin());
 }
 
-// Tải NHIỀU file vào 1 dự án — dùng chung cho nút ở thanh công cụ và nút trong khung xem dự án
+// Tải NHIỀU file vào 1 dự án — dùng chung cho nút ở thanh công cụ và nút trong khung xem dự án.
+// Media được đưa vào THƯ MỤC RIÊNG của dự án trên Cloudinary: du-an/<ten-du-an>.
 async function duanUploadFilesIntoProject(project, files, statusEl) {
     let done = 0;
+    const folder = duanProjectFolder(project);
     for (let i = 0; i < files.length; i += 1) {
         const file = files[i];
         const isVideo = file.type.indexOf('video/') === 0 || /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(file.name);
         if (statusEl) statusEl.textContent = 'Đang tải ' + (i + 1) + '/' + files.length + ': ' + file.name;
         try {
-            const uploaded = await duanUploadMediaFile(file, isVideo);
+            const uploaded = await duanUploadMediaFile(file, isVideo, folder);
             project.media.push({
                 url: uploaded.url,
                 type: isVideo ? 'video' : 'image',
@@ -1362,26 +1437,27 @@ function duanDownloadCurrentMedia() {
 // ==================== UPLOAD QUA WEB: TẢI LINK CÓ SẴN VỀ KHO CLOUDINARY ====================
 // Dán link ảnh/video từ trang khác → Cloudinary tự tải file về kho của mình (remote upload),
 // nhờ vậy media không phụ thuộc vào việc trang gốc còn giữ file hay không.
-async function duanUploadRemote(url, type) {
+async function duanUploadRemote(url, type, folder) {
     const resourceType = type === 'video' ? 'video' : 'image';
     const presets = [DUAN_CLOUDINARY_PRESET, DUAN_CLOUDINARY_FALLBACK_PRESET].filter(Boolean);
     let lastErr = null;
     for (let i = 0; i < presets.length; i += 1) {
         try {
-            return await duanUploadRemoteWithPreset(url, resourceType, presets[i]);
+            return await duanUploadRemoteWithPreset(url, resourceType, presets[i], folder);
         } catch (err) { lastErr = err; }
     }
     throw (lastErr || new Error('Không tải được link về Cloudinary'));
 }
 
-async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset) {
+async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset, folder) {
     if (!DUAN_CLOUDINARY_CLOUD_NAME) throw new Error('Chưa cấu hình Cloudinary');
+    const targetFolder = folder === undefined ? DUAN_CLOUDINARY_FOLDER : folder;
     const formData = new FormData();
     formData.append('file', remoteUrl);
     formData.append('upload_preset', preset);
-    if (DUAN_CLOUDINARY_FOLDER) {
-        formData.append('folder', DUAN_CLOUDINARY_FOLDER);
-        formData.append('asset_folder', DUAN_CLOUDINARY_FOLDER);
+    if (targetFolder) {
+        formData.append('folder', targetFolder);
+        formData.append('asset_folder', targetFolder);
     }
     const res = await fetch('https://api.cloudinary.com/v1_1/' + DUAN_CLOUDINARY_CLOUD_NAME + '/' + resourceType + '/upload', {
         method: 'POST',
@@ -1397,6 +1473,7 @@ async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset) {
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
+    duanCheckUploadFolder(data, targetFolder);
     return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
 
@@ -1404,11 +1481,11 @@ async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset) {
 // Ảnh: nén trong canvas rồi đưa lên dạng image. Video: gửi nguyên file dạng video
 // (Cloudinary gói free cho tối đa 100MB mỗi file, nên giới hạn ở mức đó).
 // Trả về { url, width, height } để biết ngay media là dọc hay ngang.
-async function duanUploadMediaFile(file, isVideo) {
+async function duanUploadMediaFile(file, isVideo, folder) {
     if (isVideo) {
         if (file.size > DUAN_VIDEO_MAX_BYTES) throw new Error('Video tối đa 100MB');
         const localSize = await duanReadVideoSize(file);
-        const uploaded = await duanUploadWithFallback(file, 'du-an-video', 'video');
+        const uploaded = await duanUploadWithFallback(file, 'du-an-video', 'video', folder);
         return {
             url: uploaded.url,
             width: uploaded.width || localSize.w,
@@ -1418,7 +1495,7 @@ async function duanUploadMediaFile(file, isVideo) {
     if (file.type.indexOf('image/') !== 0) throw new Error('Chỉ nhận file ảnh hoặc video');
     if (file.size > 20 * 1024 * 1024) throw new Error('Ảnh gốc tối đa 20MB');
     const compressed = await duanCompressImage(file, DUAN_IMAGE_MAX_DIMENSION, DUAN_IMAGE_MAX_BYTES);
-    const uploaded = await duanUploadWithFallback(compressed.blob, 'du-an-anh', 'image');
+    const uploaded = await duanUploadWithFallback(compressed.blob, 'du-an-anh', 'image', folder);
     return {
         url: uploaded.url,
         width: uploaded.width || compressed.width,
@@ -1449,27 +1526,29 @@ function duanReadVideoSize(file) {
 }
 
 // Thử preset riêng của Kho Dự án trước; nếu preset đó chưa được tạo thì dùng preset của trang chủ
-async function duanUploadWithFallback(payload, namePrefix, resourceType) {
+async function duanUploadWithFallback(payload, namePrefix, resourceType, folder) {
     const presets = [DUAN_CLOUDINARY_PRESET, DUAN_CLOUDINARY_FALLBACK_PRESET].filter(Boolean);
     let lastErr = null;
     for (let i = 0; i < presets.length; i += 1) {
         try {
-            return await duanUploadToCloudinary(payload, resourceType, namePrefix, presets[i]);
+            return await duanUploadToCloudinary(payload, resourceType, namePrefix, presets[i], folder);
         } catch (err) { lastErr = err; }
     }
     throw (lastErr || new Error('Không tải được lên Cloudinary'));
 }
 
-async function duanUploadToCloudinary(payload, resourceType, namePrefix, preset) {
+async function duanUploadToCloudinary(payload, resourceType, namePrefix, preset, folder) {
     if (!DUAN_CLOUDINARY_CLOUD_NAME) throw new Error('Chưa cấu hình Cloudinary');
     const uniqueName = namePrefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) +
         (resourceType === 'video' ? '.mp4' : '.jpg');
+    // folder = thư mục riêng của dự án (du-an/<ten-du-an>) → Media Library gọn gàng theo từng dự án
+    const targetFolder = folder === undefined ? DUAN_CLOUDINARY_FOLDER : folder;
     const formData = new FormData();
     formData.append('file', payload, uniqueName);
     formData.append('upload_preset', preset);
-    if (DUAN_CLOUDINARY_FOLDER) {
-        formData.append('folder', DUAN_CLOUDINARY_FOLDER);
-        formData.append('asset_folder', DUAN_CLOUDINARY_FOLDER);
+    if (targetFolder) {
+        formData.append('folder', targetFolder);
+        formData.append('asset_folder', targetFolder);
     }
     const res = await fetch('https://api.cloudinary.com/v1_1/' + DUAN_CLOUDINARY_CLOUD_NAME + '/' + resourceType + '/upload', {
         method: 'POST',
@@ -1485,6 +1564,7 @@ async function duanUploadToCloudinary(payload, resourceType, namePrefix, preset)
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
+    duanCheckUploadFolder(data, targetFolder);
     // Trả kèm kích thước thật để bìa/thumbnail chọn đúng khung dọc hay ngang ngay từ đầu
     return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
@@ -1554,7 +1634,8 @@ function duanSubmitForm(event) {
         if (project) { Object.assign(project, data); message = '✓ Đã cập nhật dự án'; }
     } else {
         duanMaterialize();
-        duanProjects.unshift(Object.assign({ id: duanNewId(), createdAt: Date.now() }, data));
+        // Dùng id đã chuẩn bị lúc mở form → khớp với tên thư mục Cloudinary đã dùng khi tải media lên
+        duanProjects.unshift(Object.assign({ id: duanFormDraftId || duanNewId(), createdAt: Date.now() }, data));
     }
     // Nếu đang lọc theo danh mục khác thì chuyển sang danh mục vừa lưu để thấy ngay dự án
     if (duanCategory !== 'all' && duanCategory !== data.category) duanCategory = data.category;
@@ -1635,6 +1716,10 @@ function duanBindEvents() {
             duanAddUrl();
         });
     }
+
+    // Đổi tiêu đề dự án → cập nhật gợi ý thư mục Cloudinary (dự án mới lấy tiêu đề làm tên thư mục)
+    const formTitleInput = duanEl('duanFormTitleInput');
+    if (formTitleInput) formTitleInput.addEventListener('input', duanRenderFormFolderHint);
 
     // Phím tắt: ESC đóng lớp trên cùng, ← → chuyển media/ảnh, Tab giữ trong modal
     document.addEventListener('keydown', event => {
