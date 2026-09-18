@@ -518,6 +518,7 @@ function duanDiagnosticsText() {
     lines.push('Số dự án đang hiển thị: ' + duanProjects.length + (duanProjectsSource === 'default' ? ' (đang là danh mục mặc định)' : ''));
     lines.push('Bản lưu tạm trong máy: ' + (duanReadBackup() ? 'có (sẽ dùng lại nếu nguồn chính thiếu dự án)' : 'không'));
     lines.push('Kết nối file data.js: ' + (duanMode === 'offline' ? (duanFileHandleReady ? 'đã kết nối' : 'CHƯA kết nối — bấm "Kết nối data.js" 1 lần') : 'không cần (đang lưu qua máy chủ/cloud)'));
+    if (duanMode === 'cloud') lines.push('Ghi cloud: POST ' + DUAN_PROXY_URL.replace(/\/+$/, '') + '/admin — Worker PHẢI giữ khoá projects trong hàm normStore (bản cũ đã xoá khoá này)');
     lines.push('Lần lưu gần nhất: ' + (duanLastSave
         ? (duanLastSave.ok ? 'THÀNH CÔNG lúc ' + new Date(duanLastSave.at).toLocaleTimeString('vi-VN') : 'LỖI lúc ' + new Date(duanLastSave.at).toLocaleTimeString('vi-VN') + ': ' + duanLastSave.message)
         : 'chưa lưu lần nào'));
@@ -529,7 +530,8 @@ function duanShowDiagnostics() {
     window.alert('Chẩn đoán lưu dữ liệu Kho Dự án:\n\n' + duanDiagnosticsText() +
         '\n\nCách xử lý:\n• "Quyền admin: KHÔNG" → bấm nút đăng nhập Google lại.\n' +
         '• "Kết nối file data.js: CHƯA kết nối" → bấm "Kết nối data.js" rồi chọn đúng file data.js ở thư mục gốc của trang, sau đó bấm "Lưu lại".\n' +
-        '• Đang chạy qua máy chủ mini PC → kiểm tra server.js có ghi nguyên JSON (kèm khoá projects) vào data.js.');
+        '• Đang chạy qua máy chủ mini PC → kiểm tra server.js có ghi nguyên JSON (kèm khoá projects) vào data.js.\n' +
+        '• Đang lưu qua cloud (jsonbin) → phải deploy LẠI cloudflare-worker/worker.js bản mới: Worker cũ chỉ giữ messages/ratings/albums trong hàm normStore nên đã xoá khoá projects mỗi lần ghi bin.');
 }
 
 // Chủ động cho web quyền ghi vào file data.js (1 lần, có cú bấm nên không bị trình duyệt chặn)
@@ -724,14 +726,17 @@ async function duanSaveNow(okMessage) {
             throw new Error(detail + (res.status === 401 || res.status === 403 ? ' — tài khoản Google này không được proxy cho phép ghi' : ''));
         }
         const record = payload && payload.record ? payload.record : null;
-        if (record && typeof record === 'object' && Array.isArray(record.projects)) {
-            duanFullStore = record;
-            duanClearDirty();
-            duanSetSaveState(true, 'lên cloud (jsonbin)');
-            duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên cloud'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+        // `projects: null` cũng là giá trị HỢP LỆ (= "đã khôi phục 5 danh mục mặc định") → coi như đã lưu
+        const hasProjects = !!(record && typeof record === 'object'
+            && Object.prototype.hasOwnProperty.call(record, 'projects')
+            && (record.projects === null || Array.isArray(record.projects)));
+
+        if (hasProjects || (await duanCloudKeptProjects())) {
+            if (hasProjects) duanFullStore = record;
+            duanFinishCloudSave(okMessage);
         } else {
             duanWarnServerMissingProjects();
-            duanSetSaveState(false, 'cloud đã nhận nhưng KHÔNG trả về khoá projects — bin/Worker đang bỏ khoá này');
+            duanSetSaveState(false, 'cloud nhận dữ liệu nhưng BỎ mất khoá projects — phải deploy lại cloudflare-worker/worker.js bản mới (hàm normStore phải giữ khoá projects)');
         }
         return;
     }
@@ -752,8 +757,33 @@ async function duanSaveNow(okMessage) {
 function duanWarnServerMissingProjects() {
     if (duanWarnedMissingProjects) return;
     duanWarnedMissingProjects = true;
-    console.warn('Nguồn dữ liệu không trả về khoá `projects` — kiểm tra server.js: khi ghi /api/data phải lưu nguyên JSON (kèm khoá projects) vào data.js.');
-    duanToast('⚠ Dự án đã gửi nhưng nơi lưu chưa trả về danh sách — kiểm tra server.js / data.js', false);
+    console.warn('Nguồn dữ liệu không trả về khoá `projects`. Nếu đang lưu qua cloud (proxy → jsonbin): deploy lại cloudflare-worker/worker.js bản mới — hàm normStore của Worker cũ chỉ giữ messages/ratings/albums nên XOÁ khoá projects mỗi lần ghi bin. Nếu lưu qua máy chủ mini PC: server.js phải ghi nguyên JSON (kèm khoá projects) vào data.js.');
+    duanToast('⚠ Dự án đã gửi nhưng nơi lưu không giữ khoá projects — xem nút "?" để biết cách sửa', false, 12000);
+}
+
+// Cất trạng thái "đã lưu" ở chế độ cloud (dùng chung cho cả 2 đường: phản hồi có projects, hoặc kiểm chứng lại)
+function duanFinishCloudSave(okMessage) {
+    duanClearDirty();
+    duanSetSaveState(true, 'lên cloud (jsonbin)');
+    duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên cloud'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+}
+
+// Kiểm chứng sau khi ghi cloud: đọc lại /data xem bin có THẬT SỰ giữ khoá `projects` đúng như vừa gửi hay không.
+// Cần bước này vì Worker cũ (hàm normStore) không trả lại khoá `projects` trong phản hồi /admin dù đã ghi,
+// làm trang báo "CHƯA LƯU" oan. Sau khi deploy worker.js mới thì phản hồi đã có sẵn nên hàm này ít khi chạy.
+async function duanCloudKeptProjects() {
+    try {
+        const res = await fetch(DUAN_PROXY_URL.replace(/\/+$/, '') + '/data', { cache: 'no-store' });
+        if (!res.ok) return false;
+        const payload = await res.json();
+        const store = (payload && payload.record) ? payload.record : payload;
+        const saved = duanNormalizeProjects(store);
+        if (!saved || saved.length !== duanProjects.length) return false;
+        return duanProjects.every(p => saved.some(s => s.id === p.id));
+    } catch (err) {
+        console.warn('Không kiểm chứng được dự án trên cloud:', err);
+        return false;
+    }
 }
 // ==================== GHI FILE ../data.js KHI CHẠY OFFLINE (file://) ====================
 // Dùng File System Access API + lưu handle trong IndexedDB (chung DB với app.js) nên cả hai trang
@@ -1591,6 +1621,7 @@ async function duanHandleQuickFiles(input) {
     const done = await duanUploadFilesIntoProject(project, files, duanEl('duanQuickStatus'));
     if (!done) { duanToast('⚠ Không tải được file nào', false); return; }
     duanRenderAll();
+    duanMaterialize();
     duanPersist('✓ Đã thêm ' + done + ' file vào "' + project.title + '"');
 }
 
@@ -1606,6 +1637,7 @@ async function duanHandleProjectFiles(input) {
     const done = await duanUploadFilesIntoProject(project, files, duanEl('duanProjectStatus'));
     if (!done) { duanToast('⚠ Không tải được file nào', false); return; }
     duanRenderAll();
+    duanMaterialize();
     duanPersist('✓ Đã thêm ' + done + ' file vào dự án');
 }
 
@@ -1618,6 +1650,7 @@ function duanDeleteProjectMedia(index) {
     project.media.splice(index, 1);
     if (duanViewIndex >= project.media.length) duanViewIndex = Math.max(0, project.media.length - 1);
     duanRenderAll();
+    duanMaterialize();
     duanPersist('🗑 Đã xoá ảnh/video khỏi dự án');
 }
 
@@ -1630,6 +1663,7 @@ function duanSetProjectCover(index) {
     project.media.unshift(picked);
     duanViewIndex = 0;
     duanRenderAll();
+    duanMaterialize();
     duanPersist('✓ Đã đặt làm ảnh bìa dự án');
 }
 
@@ -1882,6 +1916,7 @@ function duanSubmitForm(event) {
 
     duanCloseForm();
     duanRenderAll();
+    duanMaterialize();
     duanPersist(message);
 }
 
