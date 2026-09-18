@@ -78,6 +78,17 @@
                     <button type="button" class="duan-btn duan-btn--ghost" data-duan-reset="1" title="Quay lại 5 danh mục mặc định">
                         <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Mặc định
                     </button>
+                    <!-- Trạng thái lưu: admin thấy ngay đã lưu được hay chưa + lý do, kèm nút xử lý -->
+                    <span id="duanSaveState" class="duan-chip hidden" role="status" aria-live="polite"></span>
+                    <button type="button" id="duanSaveRetry" class="duan-btn duan-btn--xs duan-btn--primary hidden" data-duan-retry-save="1" title="Ghi lại dự án vào nơi lưu (file data.js / máy chủ / cloud)">
+                        <i class="ph ph-floppy-disk" aria-hidden="true"></i> Lưu lại
+                    </button>
+                    <button type="button" id="duanConnectFile" class="duan-btn duan-btn--xs hidden" data-duan-connect-file="1" title="Chọn đúng file data.js ở thư mục gốc để web tự ghi vào đó">
+                        <i class="ph ph-plug" aria-hidden="true"></i> Kết nối data.js
+                    </button>
+                    <button type="button" id="duanSaveHelp" class="duan-btn duan-btn--xs duan-btn--ghost hidden" data-duan-save-help="1" title="Xem chẩn đoán vì sao chưa lưu được">
+                        <i class="ph ph-question" aria-hidden="true"></i>
+                    </button>
                     <span id="duanModeChip" class="duan-chip hidden" title="Nơi lưu thay đổi"></span>
                 </div>
             </div>

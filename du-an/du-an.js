@@ -70,6 +70,8 @@ let duanViewIndex = 0;
 let duanFormMedia = [];
 let duanFormEditId = null;
 let duanFormDraftId = '';   // id dự kiến cho dự án mới (dùng làm tên thư mục khi tiêu đề còn trống)
+let duanLastSave = null;         // { ok, at, message } — trạng thái lưu gần nhất (hiện cho admin)
+let duanFileHandleReady = false; // chế độ offline: đã kết nối file data.js để tự ghi chưa
 let duanLightboxList = [];
 let duanLightboxIndex = 0;
 let duanFocusedBefore = null;
@@ -474,6 +476,90 @@ function duanWarnWrongFolder(landed, targetFolder, preset) {
 function duanMaterialize() {
     if (duanProjectsSource === 'default') duanProjectsSource = 'store';
 }
+// ==================== TRẠNG THÁI LƯU + CHẨN ĐOÁN (để không bao giờ "im lặng mất dữ liệu") ====================
+function duanSetSaveState(ok, message) {
+    duanLastSave = { ok: ok, at: Date.now(), message: message || '' };
+    duanRenderSaveState();
+}
+
+function duanRenderSaveState() {
+    const chip = duanEl('duanSaveState');
+    if (!chip) return;
+    const admin = duanIsAdmin();
+    const show = admin && !!duanLastSave;
+
+    // Nút phụ trợ chỉ hiện cho admin và đúng khi cần
+    const retryBtn = duanEl('duanSaveRetry');
+    if (retryBtn) retryBtn.classList.toggle('hidden', !admin || !duanLastSave || duanLastSave.ok);
+    const connectBtn = duanEl('duanConnectFile');
+    if (connectBtn) connectBtn.classList.toggle('hidden', !admin || duanMode !== 'offline' || duanFileHandleReady);
+    const helpBtn = duanEl('duanSaveHelp');
+    if (helpBtn) helpBtn.classList.toggle('hidden', !admin);
+
+    if (!show) { chip.className = 'duan-chip'; chip.classList.add('hidden'); return; }
+
+    const time = new Date(duanLastSave.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    chip.className = 'duan-chip ' + (duanLastSave.ok ? 'is-ok' : 'is-err');
+    chip.textContent = duanLastSave.ok
+        ? '💾 Đã lưu ' + time
+        : '⚠ CHƯA LƯU ' + time + ' — ' + (duanLastSave.message || 'không rõ lý do');
+    chip.title = duanDiagnosticsText();
+    chip.classList.remove('hidden');
+}
+
+// Báo cáo tình trạng lưu (bấm nút "?" để xem) — giúp biết chính xác vì sao không lưu được
+function duanDiagnosticsText() {
+    const lines = [];
+    lines.push('Chế độ lưu: ' + (duanMode === 'server' ? 'máy chủ /api/data'
+        : (duanMode === 'cloud' ? 'cloud (proxy → jsonbin)' : 'file data.js trên máy')));
+    lines.push('Trang đang mở qua: ' + window.location.protocol + '//' + (window.location.host || '(file cục bộ)'));
+    lines.push('Quyền admin: ' + (duanIsAdmin() ? 'CÓ (' + duanGoogleUser.email + ')' : 'KHÔNG — cần đăng nhập Google quyền admin'));
+    lines.push('Token Google: ' + (duanIdToken ? 'còn hiệu lực' : 'không có / đã hết hạn (đăng nhập lại)'));
+    lines.push('Số dự án đang hiển thị: ' + duanProjects.length + (duanProjectsSource === 'default' ? ' (đang là danh mục mặc định)' : ''));
+    lines.push('Bản lưu tạm trong máy: ' + (duanReadBackup() ? 'có (sẽ dùng lại nếu nguồn chính thiếu dự án)' : 'không'));
+    lines.push('Kết nối file data.js: ' + (duanMode === 'offline' ? (duanFileHandleReady ? 'đã kết nối' : 'CHƯA kết nối — bấm "Kết nối data.js" 1 lần') : 'không cần (đang lưu qua máy chủ/cloud)'));
+    lines.push('Lần lưu gần nhất: ' + (duanLastSave
+        ? (duanLastSave.ok ? 'THÀNH CÔNG lúc ' + new Date(duanLastSave.at).toLocaleTimeString('vi-VN') : 'LỖI lúc ' + new Date(duanLastSave.at).toLocaleTimeString('vi-VN') + ': ' + duanLastSave.message)
+        : 'chưa lưu lần nào'));
+    return lines.join('\n');
+}
+
+function duanShowDiagnostics() {
+    if (!duanEnsureAdmin()) return;
+    window.alert('Chẩn đoán lưu dữ liệu Kho Dự án:\n\n' + duanDiagnosticsText() +
+        '\n\nCách xử lý:\n• "Quyền admin: KHÔNG" → bấm nút đăng nhập Google lại.\n' +
+        '• "Kết nối file data.js: CHƯA kết nối" → bấm "Kết nối data.js" rồi chọn đúng file data.js ở thư mục gốc của trang, sau đó bấm "Lưu lại".\n' +
+        '• Đang chạy qua máy chủ mini PC → kiểm tra server.js có ghi nguyên JSON (kèm khoá projects) vào data.js.');
+}
+
+// Chủ động cho web quyền ghi vào file data.js (1 lần, có cú bấm nên không bị trình duyệt chặn)
+async function duanConnectDataFile() {
+    if (!duanEnsureAdmin()) return;
+    if (!window.showSaveFilePicker) {
+        duanToast('⚠ Trình duyệt không hỗ trợ tự ghi file — hãy dùng nút "Tải data.js" rồi thay file thủ công', false, 12000);
+        return;
+    }
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: DUAN_DATA_FILE_NAME,
+            types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
+        });
+        await duanKeepFileHandle(handle).catch(() => {});
+        duanFileHandleReady = true;
+        duanToast('✓ Đã kết nối data.js — từ giờ mọi thao tác sẽ tự lưu vào file này', true, 8000);
+        duanRenderSaveState();
+        duanPersist('✓ Đã lưu dự án vào data.js');
+    } catch (err) {
+        duanToast('Bạn đã đóng hộp thoại chọn file (chưa kết nối được data.js)', false, 8000);
+    }
+}
+
+// Lưu lại: gọi từ cú bấm nên trình duyệt cho phép mở hộp thoại file nếu cần
+function duanRetrySave() {
+    if (!duanEnsureAdmin()) return;
+    duanPersist('✓ Đã lưu dự án');
+}
+
 // ==================== ĐỌC DỮ LIỆU (SERVER → CLOUD → OFFLINE) ====================
 let duanWarnedMissingProjects = false;
 
@@ -495,19 +581,42 @@ async function duanLoadStore() {
                 }
             } catch (err) { /* mất mạng → dùng bản cục bộ */ }
         }
+        // 3) Host tĩnh (có http nhưng không có /api, không dùng được proxy): đọc lại data.js
+        //    kèm tham số chống cache để KHÔNG bị dùng lại bản data.js cũ đã lưu trong trình duyệt.
+        try {
+            const res = await fetch('../data.js?t=' + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const parsed = duanParseDataFile(await res.text());
+                if (parsed) { duanApplyStore(parsed, 'offline'); return; }
+            }
+        } catch (err) { /* file:// hoặc bị chặn → dùng window.SITE_DATA bên dưới */ }
     }
-    // 3) Offline: dữ liệu từ data.js cùng thư mục gốc (đã nạp bằng <script src="../data.js">)
+    // 4) Offline (file://): dữ liệu từ data.js cùng thư mục gốc (đã nạp bằng <script src="../data.js">)
     duanApplyStore(window.SITE_DATA || {}, 'offline');
+}
+
+// Đọc nội dung file data.js thành object (data.js có thể chứa comment/dấu phẩy cuối nên KHÔNG dùng JSON.parse)
+function duanParseDataFile(text) {
+    const match = String(text || '').match(/window\.SITE_DATA\s*=\s*([\s\S]*);\s*$/);
+    if (!match) return null;
+    try {
+        return (new Function('return (' + match[1] + ');'))();
+    } catch (err) {
+        console.warn('Không đọc được data.js:', err);
+        return null;
+    }
 }
 
 function duanApplyStore(record, mode) {
     duanMode = mode;
     duanFullStore = (record && typeof record === 'object' && !Array.isArray(record)) ? record : {};
     let projects = duanNormalizeProjects(duanFullStore);
-    // Offline: data.js chưa có dự án mà máy này vừa lưu bản tạm → dùng bản tạm để không mất thao tác
-    if (!projects && mode === 'offline') {
-        const backup = duanReadBackup();
-        if (backup) projects = backup;
+    let recovered = false;
+    // Nguồn chính CHƯA có khoá `projects` (chưa tuỳ chỉnh, hoặc lần lưu trước thất bại)
+    // → nếu máy này còn bản lưu tạm CHƯA ghi được thì dùng lại để không mất công thao tác của bạn.
+    if (!projects) {
+        const backup = duanReadBackupIfDirty();
+        if (backup) { projects = backup; recovered = true; }
     }
     if (!projects) {
         duanProjects = duanDefaultProjects();
@@ -517,16 +626,23 @@ function duanApplyStore(record, mode) {
         duanProjectsSource = 'store';
     }
     duanRenderAll();
+    if (recovered) {
+        duanSetSaveState(false, 'Đang dùng bản lưu tạm trên máy này (lần lưu trước chưa ghi được vào nơi lưu chính) — bấm "Lưu lại"');
+        duanToast('⚠ Đã khôi phục dự án từ bản lưu tạm — bấm "Lưu lại" để ghi vào nơi lưu chính', false, 12000);
+    }
+    duanRefreshHandleState();
 }
 
 function duanWriteBackup() {
     try {
         localStorage.setItem(DUAN_BACKUP_KEY, JSON.stringify(duanProjects));
+        localStorage.setItem(DUAN_DIRTY_KEY, '1');      // để lần sau còn biết mà khôi phục nếu lưu lỗi
         sessionStorage.setItem(DUAN_DIRTY_KEY, '1');
     } catch (err) { console.warn('Không ghi được bản tạm dự án:', err); }
 }
 
 function duanClearDirty() {
+    try { localStorage.removeItem(DUAN_DIRTY_KEY); } catch (err) {}
     try { sessionStorage.removeItem(DUAN_DIRTY_KEY); } catch (err) {}
 }
 
@@ -540,18 +656,35 @@ function duanReadBackup() {
     } catch (err) { return null; }
 }
 
+// Chỉ dùng bản lưu tạm khi nó được đánh dấu "chưa ghi được vào nơi lưu chính"
+function duanReadBackupIfDirty() {
+    let dirty = false;
+    try { dirty = sessionStorage.getItem(DUAN_DIRTY_KEY) === '1' || localStorage.getItem(DUAN_DIRTY_KEY) === '1'; } catch (err) { dirty = true; }
+    return dirty ? duanReadBackup() : null;
+}
+
+// Kiểm tra xem đã kết nối được file data.js chưa (chỉ có ý nghĩa ở chế độ offline)
+async function duanRefreshHandleState() {
+    if (duanMode !== 'offline') { duanFileHandleReady = true; duanRenderSaveState(); return; }
+    try { duanFileHandleReady = !!(await duanReadStoredFileHandle()); }
+    catch (err) { duanFileHandleReady = false; }
+    duanRenderSaveState();
+}
+
 // ==================== LƯU DỮ LIỆU ====================
 function duanPersist(okMessage) {
     const task = duanSaveQueue.then(() => duanSaveNow(okMessage)).catch(err => {
         console.warn('Lưu dự án thất bại:', err);
-        duanToast('⚠ ' + (err && err.message ? err.message : 'Không lưu được dự án'), false);
+        const msg = (err && err.message) ? err.message : 'Không lưu được dự án';
+        duanSetSaveState(false, msg);
+        duanToast('⚠ ' + msg, false, 15000);
     });
     duanSaveQueue = task.catch(() => {});
     return duanSaveQueue;
 }
 
 async function duanSaveNow(okMessage) {
-    if (!duanIsAdmin()) throw new Error('Cần đăng nhập quyền admin để lưu thay đổi');
+    if (!duanIsAdmin()) throw new Error('Cần đăng nhập quyền admin để lưu thay đổi (bấm nút đăng nhập Google)');
     // Ghi vào store: null = đang dùng danh mục mặc định, mảng = dữ liệu thật của admin
     duanFullStore.projects = duanProjectsSource === 'default' ? null : duanProjects;
     duanWriteBackup();
@@ -565,15 +698,20 @@ async function duanSaveNow(okMessage) {
         if (!res.ok) throw new Error('Máy chủ /api/data trả về ' + res.status);
         let saved = null;
         try { saved = await res.json(); } catch (err) {}
-        if (saved && typeof saved === 'object' && Array.isArray(saved.projects)) duanFullStore = saved;
-        else duanWarnServerMissingProjects();
-        duanClearDirty();
-        duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên máy chủ'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+        if (saved && typeof saved === 'object' && Array.isArray(saved.projects)) {
+            duanFullStore = saved;
+            duanClearDirty();
+            duanSetSaveState(true, 'lên máy chủ mini PC');
+            duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên máy chủ'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+        } else {
+            duanWarnServerMissingProjects();
+            duanSetSaveState(false, 'máy chủ đã nhận nhưng KHÔNG trả về khoá projects — kiểm tra server.js (phải ghi nguyên JSON vào data.js)');
+        }
         return;
     }
 
     if (duanMode === 'cloud' && DUAN_PROXY_URL) {
-        if (!duanIdToken) throw new Error('Phiên đăng nhập đã hết hạn — hãy đăng nhập lại');
+        if (!duanIdToken) throw new Error('Phiên đăng nhập đã hết hạn — hãy đăng nhập Google lại rồi bấm "Lưu lại"');
         const res = await fetch(DUAN_PROXY_URL.replace(/\/+$/, '') + '/admin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Google-Token': duanIdToken },
@@ -581,25 +719,34 @@ async function duanSaveNow(okMessage) {
         });
         let payload = null;
         try { payload = await res.json(); } catch (err) {}
-        if (!res.ok) throw new Error((payload && payload.error) || ('Proxy trả về ' + res.status));
+        if (!res.ok) {
+            const detail = (payload && payload.error) || ('Proxy trả về ' + res.status);
+            throw new Error(detail + (res.status === 401 || res.status === 403 ? ' — tài khoản Google này không được proxy cho phép ghi' : ''));
+        }
         const record = payload && payload.record ? payload.record : null;
-        if (record && typeof record === 'object' && Array.isArray(record.projects)) duanFullStore = record;
-        else duanWarnServerMissingProjects();
-        duanClearDirty();
-        duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên cloud'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+        if (record && typeof record === 'object' && Array.isArray(record.projects)) {
+            duanFullStore = record;
+            duanClearDirty();
+            duanSetSaveState(true, 'lên cloud (jsonbin)');
+            duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên cloud'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
+        } else {
+            duanWarnServerMissingProjects();
+            duanSetSaveState(false, 'cloud đã nhận nhưng KHÔNG trả về khoá projects — bin/Worker đang bỏ khoá này');
+        }
         return;
     }
 
-    // Offline (file://) → ghi thẳng ../data.js hoặc tải file về để thay thủ công
+    // Offline (file:// hoặc host tĩnh) → ghi thẳng ../data.js, hoặc tải file về để thay thủ công
     const result = await duanWriteDataFile();
-    if (result === 'saved') {
+    if (result.status === 'saved') {
         duanClearDirty();
+        duanSetSaveState(true, 'vào data.js');
         duanToast(duanNoticeText((okMessage ? okMessage + ' ' : '✓ ') + 'đã ghi vào data.js'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
-    } else if (result === 'cancelled') {
-        duanToast('Đã huỷ lưu dự án', false);
-    } else {
-        duanToast('⚠ Chưa tự lưu được — đã tải file data.js, bạn thay vào thư mục trang nhé', false);
+        return;
     }
+    // Các trường hợp còn lại: NÊU RÕ lý do + giữ nguyên bản lưu tạm để không mất dữ liệu
+    duanSetSaveState(false, result.message);
+    duanToast('⚠ ' + result.message, false, 15000);
 }
 
 function duanWarnServerMissingProjects() {
@@ -660,29 +807,52 @@ function duanDownloadDataFile(payload) {
     URL.revokeObjectURL(url);
 }
 
-// Kết quả: 'saved' | 'cancelled' | 'unsupported' | 'error'
+// Kết quả: { status, message } — status: 'saved' | 'cancelled' | 'no-gesture' | 'no-permission' | 'unsupported' | 'error'
 async function duanWriteDataFile() {
     const payload = duanBuildDataPayload();
     let handle = null;
     try { handle = await duanReadStoredFileHandle(); } catch (err) { handle = null; }
+
     if (!handle) {
-        if (!window.showSaveFilePicker) { duanDownloadDataFile(payload); return 'unsupported'; }
+        if (!window.showSaveFilePicker) {
+            duanDownloadDataFile(payload);
+            return { status: 'unsupported', message: 'Trình duyệt không tự ghi file được — đã tải data.js về, bạn hãy thay vào thư mục gốc của trang' };
+        }
         try {
             handle = await window.showSaveFilePicker({
                 suggestedName: DUAN_DATA_FILE_NAME,
                 types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
             });
-        } catch (err) { return 'cancelled'; }
+            duanFileHandleReady = true;
+        } catch (err) {
+            // Trình duyệt CHẶN hộp thoại khi lệnh lưu không xuất phát từ cú bấm của người dùng
+            // (upload xong mới lưu nên "user gesture" đã mất) → phân biệt rõ để báo đúng cách xử lý
+            const text = String((err && err.name) || '') + ' ' + String((err && err.message) || '');
+            const blocked = /NotAllowedError|SecurityError|gesture/i.test(text);
+            return {
+                status: blocked ? 'no-gesture' : 'cancelled',
+                message: blocked
+                    ? 'Trình duyệt chặn hộp thoại chọn file (thao tác lưu không bắt đầu từ cú bấm của bạn) — bấm "Kết nối data.js" rồi chọn file data.js ở thư mục gốc, hoặc bấm "Lưu lại"'
+                    : 'Bạn đã đóng hộp thoại chọn file nên chưa ghi được'
+            };
+        }
     }
+
     try {
         const writable = await handle.createWritable();
         await writable.write(payload);
         await writable.close();
         if (window.showSaveFilePicker) duanKeepFileHandle(handle).catch(() => {});
-        return 'saved';
+        duanFileHandleReady = true;
+        return { status: 'saved', message: 'đã ghi vào data.js' };
     } catch (err) {
+        const name = String((err && err.name) || '');
+        if (/NotAllowedError|SecurityError/i.test(name)) {
+            duanFileHandleReady = false;
+            return { status: 'no-permission', message: 'Trình duyệt chưa cho phép ghi vào file — bấm "Kết nối data.js" rồi chọn lại đúng file data.js' };
+        }
         duanDownloadDataFile(payload);
-        return 'error';
+        return { status: 'error', message: 'Không ghi được file (' + (err && err.message ? err.message : name) + ') — đã tải data.js về, bạn hãy thay vào thư mục gốc của trang' };
     }
 }
 // ==================== ĐĂNG NHẬP GOOGLE & QUYỀN ADMIN ====================
@@ -939,6 +1109,8 @@ function duanRenderAdminTools() {
     duanRenderQuickTarget();
     // Ghi chú khi preset Cloudinary đang ghi đè thư mục dự án
     duanRenderConfigNote();
+    // Trạng thái lưu (đã lưu / chưa lưu + lý do + nút Lưu lại / Kết nối data.js / chẩn đoán)
+    duanRenderSaveState();
 }
 // ==================== XEM DỰ ÁN: ẢNH / VIDEO ====================
 function duanOpenProject(id) {
@@ -1858,6 +2030,9 @@ function duanOnClick(event) {
     }
 
     if (target.closest('[data-duan-new]')) { duanOpenForm(null, false); return; }
+    if (target.closest('[data-duan-retry-save]')) { duanRetrySave(); return; }
+    if (target.closest('[data-duan-connect-file]')) { duanConnectDataFile(); return; }
+    if (target.closest('[data-duan-save-help]')) { duanShowDiagnostics(); return; }
     if (target.closest('[data-duan-add-media]')) { duanOpenForm(duanOpenProjectId, true); return; }
     if (target.closest('[data-duan-edit]')) { duanOpenForm(duanOpenProjectId, false); return; }
     if (target.closest('[data-duan-delete]')) { duanDeleteProject(); return; }

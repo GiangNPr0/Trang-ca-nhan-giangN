@@ -167,6 +167,18 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
 .duan-badge.is-emerald { background: rgba(5, 150, 105, 0.92); }
 .duan-badge.is-amber { background: rgba(217, 119, 6, 0.92); }
 .duan-badge.is-gray { background: rgba(75, 85, 99, 0.92); }
+/* Chip trạng thái lưu: xanh = đã lưu, đỏ = chưa lưu (kèm lý do ở title) */
+.duan-chip.is-ok {
+    background: rgba(5, 150, 105, 0.92);
+    border-color: rgba(5, 150, 105, 0.95);
+    color: #ffffff;
+}
+.duan-chip.is-err {
+    background: rgba(220, 38, 38, 0.94);
+    border-color: rgba(220, 38, 38, 0.98);
+    color: #ffffff;
+    font-weight: 700;
+}
 .duan-chip {
     display: inline-flex;
     align-items: center;
