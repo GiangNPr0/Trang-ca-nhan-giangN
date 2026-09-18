@@ -745,6 +745,9 @@ function duanRenderAdminTools() {
             : (duanMode === 'cloud' ? 'Lưu: cloud (jsonbin)' : 'Lưu: file data.js trên máy');
         chip.classList.toggle('hidden', !admin);
     }
+
+    // Ô chọn dự án nhận ảnh/video tải lên (giống album: chọn album rồi bấm Tải ảnh lên)
+    duanRenderQuickTarget();
 }
 // ==================== XEM DỰ ÁN: ẢNH / VIDEO ====================
 function duanOpenProject(id) {
@@ -858,20 +861,30 @@ function duanViewStep(delta) {
     duanRenderViewer(project);
 }
 
-// Dải thumbnail: ảnh nhỏ (Cloudinary đã tối ưu) + nhãn loại media
+// Dải thumbnail: ảnh nhỏ (Cloudinary đã tối ưu) + nhãn loại media.
+// Admin thấy thêm 2 nút ngay trên mỗi ô (đặt bìa / xoá) — giống nút tải xuống + xoá trong album ảnh.
+// LƯU Ý: công cụ phải nằm NGOÀI thẻ <button> của thumbnail (HTML không cho lồng button trong button).
 function duanRenderThumbs(project) {
     const wrap = duanEl('duanThumbs');
     if (!wrap) return;
     const list = project ? project.media : [];
+    const admin = duanIsAdmin();
     wrap.innerHTML = list.map((item, index) => {
         const media = duanDetectMedia(item.url);
         if (!media) return '';
         const label = media.type === 'image' ? 'ẢNH' : (media.type === 'video' ? 'VIDEO' : String(media.provider || 'VIDEO').toUpperCase());
         const icon = media.type === 'image' ? 'ph-image' : 'ph-play';
-        return '<button type="button" class="duan-thumb' + (index === duanViewIndex ? ' is-active' : '') + '" data-duan-thumb="' + index + '" aria-label="Xem ' + duanEscape(label) + ' ' + (index + 1) + '">' +
-            '<span class="duan-thumb-icon"><i class="ph ' + icon + '" aria-hidden="true"></i></span>' +
-            (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
-            '<span class="duan-thumb-tag">' + duanEscape(label) + '</span></button>';
+        const tools = admin ? '<span class="duan-thumb-tools">' +
+            (index > 0 ? '<button type="button" class="duan-thumb-btn" data-duan-thumb-cover="' + index + '" title="Đặt làm ảnh bìa"><i class="ph ph-image-square" aria-hidden="true"></i></button>' : '') +
+            '<button type="button" class="duan-thumb-btn duan-thumb-btn--del" data-duan-thumb-del="' + index + '" title="Xoá khỏi dự án"><i class="ph ph-trash" aria-hidden="true"></i></button>' +
+        '</span>' : '';
+        return '<div class="duan-thumb-cell">' +
+            '<button type="button" class="duan-thumb' + (index === duanViewIndex ? ' is-active' : '') + '" data-duan-thumb="' + index + '" aria-label="Xem ' + duanEscape(label) + ' ' + (index + 1) + '">' +
+                '<span class="duan-thumb-icon"><i class="ph ' + icon + '" aria-hidden="true"></i></span>' +
+                (media.thumb ? '<img src="' + duanEscape(media.thumb) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
+                '<span class="duan-thumb-tag">' + duanEscape(label) + '</span>' +
+            '</button>' + tools +
+        '</div>';
     }).join('');
 }
 
@@ -1037,19 +1050,45 @@ function duanRenderFormMedia() {
     }).join('');
 }
 
-// Thêm ảnh/video bằng LINK có sẵn trên web (ảnh, video, YouTube, Facebook, Vimeo, Google Drive)
-function duanAddUrl() {
+// Thêm ảnh/video bằng LINK có sẵn trên web (ảnh, video, YouTube, Facebook, Vimeo, Google Drive).
+// Nếu là link ảnh/video trực tiếp và ô "Tải link về kho Cloudinary" đang bật → upload qua web
+// (Cloudinary tự tải file về kho), lỗi thì tự động lùi về cách dán link trực tiếp.
+async function duanAddUrl() {
     if (!duanEnsureAdmin()) return;
     const input = duanEl('duanUrlInput');
     if (!input) return;
     const url = duanCleanLink(input.value);
     if (!url) { duanToast('⚠ Hãy dán link ảnh hoặc video', false); return; }
     if (duanFormMedia.some(m => m.url === url)) { duanToast('Link này đã có trong dự án', false); return; }
+
     const media = duanDetectMedia(url);
-    duanFormMedia.push({ url: url, type: media ? media.type : 'image' });
+    const type = media ? media.type : 'image';
+    const remoteBox = duanEl('duanRemoteFetch');
+    const status = duanEl('duanMediaStatus');
+    const canUploadRemote = (type === 'image' || type === 'video') &&
+        !/^https:\/\/res\.cloudinary\.com\//i.test(url) &&
+        !!(remoteBox && remoteBox.checked);
     input.value = '';
+
+    if (canUploadRemote) {
+        if (status) status.textContent = 'Đang tải link về kho Cloudinary...';
+        try {
+            const hosted = await duanUploadRemote(url, type);
+            duanFormMedia.push({ url: hosted, type: type });
+            duanRenderFormMedia();
+            if (status) status.textContent = '';
+            duanToast('✓ Đã tải link về Cloudinary và thêm vào dự án', true);
+            return;
+        } catch (err) {
+            console.warn('Không tải được link về Cloudinary:', err);
+            if (status) status.textContent = '';
+            duanToast('⚠ Không tải được link về Cloudinary — đã thêm bằng link trực tiếp', false);
+        }
+    }
+
+    duanFormMedia.push({ url: url, type: type });
     duanRenderFormMedia();
-    duanToast('✓ Đã thêm ' + duanMediaTypeLabel(media ? media.type : 'image'), true);
+    duanToast('✓ Đã thêm ' + duanMediaTypeLabel(type), true);
 }
 
 // Tải file từ máy lên Cloudinary (ảnh được nén trước; video gửi nguyên file)
@@ -1078,6 +1117,176 @@ async function duanHandleFiles(input) {
     if (status) status.textContent = done ? '✓ Đã tải lên ' + done + ' file' : '';
     if (done) duanToast('✓ Đã thêm ' + done + ' file vào dự án', true);
 }
+// ==================== TẢI NHANH ẢNH/VIDEO TỪ WEB (giống "Tải ảnh lên" của album) ====================
+// Ô chọn dự án nhận file, nằm trong thanh công cụ admin
+function duanRenderQuickTarget() {
+    const select = duanEl('duanQuickTarget');
+    if (!select) return;
+    const previous = select.value;
+    const options = ['<option value="__new">＋ Dự án mới…</option>'].concat(
+        duanProjects.map(p => '<option value="' + duanEscape(p.id) + '">' + duanEscape(p.title) + '</option>')
+    );
+    select.innerHTML = options.join('');
+    if (previous && (previous === '__new' || duanProjectById(previous))) select.value = previous;
+    else if (duanOpenProjectId && duanProjectById(duanOpenProjectId)) select.value = duanOpenProjectId;
+    select.classList.toggle('hidden', !duanIsAdmin());
+}
+
+// Tải NHIỀU file vào 1 dự án — dùng chung cho nút ở thanh công cụ và nút trong khung xem dự án
+async function duanUploadFilesIntoProject(project, files, statusEl) {
+    let done = 0;
+    for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        const isVideo = file.type.indexOf('video/') === 0 || /\.(mp4|webm|mov|m4v|ogv|ogg)$/i.test(file.name);
+        if (statusEl) statusEl.textContent = 'Đang tải ' + (i + 1) + '/' + files.length + ': ' + file.name;
+        try {
+            const url = await duanUploadMediaFile(file, isVideo);
+            project.media.push({ url: url, type: isVideo ? 'video' : 'image' });
+            done += 1;
+        } catch (err) {
+            console.error('Tải media lên thất bại:', err);
+            duanToast('⚠ ' + file.name + ': ' + (err && err.message ? err.message : 'tải lên thất bại'), false);
+        }
+    }
+    if (statusEl) statusEl.textContent = done ? '✓ Đã tải lên ' + done + ' file' : '';
+    return done;
+}
+// Nút "Tải ảnh/video lên" ở thanh công cụ: tải file vào dự án đang chọn (hoặc tạo dự án mới ngay)
+async function duanHandleQuickFiles(input) {
+    if (!duanEnsureAdmin()) { if (input) input.value = ''; return; }
+    const files = Array.from((input && input.files) || []);
+    if (input) input.value = '';
+    if (!files.length) return;
+
+    const select = duanEl('duanQuickTarget');
+    const targetId = select ? select.value : '__new';
+    let project = targetId === '__new' ? null : duanProjectById(targetId);
+
+    if (!project) {
+        const suggested = 'Dự án ' + new Date().toLocaleDateString('vi-VN');
+        const answer = window.prompt('Tiêu đề dự án mới cho ' + files.length + ' file vừa chọn:', suggested);
+        const title = (answer || '').trim();
+        if (!title) { duanToast('Đã huỷ tải lên', false); return; }
+        duanMaterialize();
+        project = duanNormalizeProject({
+            id: duanNewId(),
+            title: title.slice(0, 140),
+            category: duanCategory === 'all' ? DUAN_CATEGORIES[0].key : duanCategory,
+            description: '', link: '', linkLabel: '', media: [], createdAt: Date.now()
+        });
+        if (!project) { duanToast('⚠ Không tạo được dự án mới', false); return; }
+        duanProjects.unshift(project);
+        duanRenderAll();
+    }
+
+    const done = await duanUploadFilesIntoProject(project, files, duanEl('duanQuickStatus'));
+    if (!done) { duanToast('⚠ Không tải được file nào', false); return; }
+    duanRenderAll();
+    duanPersist('✓ Đã thêm ' + done + ' file vào "' + project.title + '"');
+}
+
+// Nút "Tải lên" trong khung xem dự án: thêm trực tiếp vào dự án đang mở rồi lưu ngay
+async function duanHandleProjectFiles(input) {
+    if (!duanEnsureAdmin()) { if (input) input.value = ''; return; }
+    const project = duanCurrentProject();
+    if (!project) return;
+    const files = Array.from((input && input.files) || []);
+    if (input) input.value = '';
+    if (!files.length) return;
+
+    const done = await duanUploadFilesIntoProject(project, files, duanEl('duanProjectStatus'));
+    if (!done) { duanToast('⚠ Không tải được file nào', false); return; }
+    duanRenderAll();
+    duanPersist('✓ Đã thêm ' + done + ' file vào dự án');
+}
+
+// Xoá 1 ảnh/video khỏi dự án đang mở (giống nút xoá trên từng ảnh trong album)
+function duanDeleteProjectMedia(index) {
+    if (!duanEnsureAdmin()) return;
+    const project = duanCurrentProject();
+    if (!project || index < 0 || index >= project.media.length) return;
+    if (!window.confirm('Xoá ảnh/video này khỏi dự án?\n(File vẫn còn trên Cloudinary, chỉ gỡ khỏi danh sách hiển thị)')) return;
+    project.media.splice(index, 1);
+    if (duanViewIndex >= project.media.length) duanViewIndex = Math.max(0, project.media.length - 1);
+    duanRenderAll();
+    duanPersist('🗑 Đã xoá ảnh/video khỏi dự án');
+}
+
+// Đặt ảnh/video đang chọn làm bìa dự án
+function duanSetProjectCover(index) {
+    if (!duanEnsureAdmin()) return;
+    const project = duanCurrentProject();
+    if (!project || index <= 0 || index >= project.media.length) return;
+    const picked = project.media.splice(index, 1)[0];
+    project.media.unshift(picked);
+    duanViewIndex = 0;
+    duanRenderAll();
+    duanPersist('✓ Đã đặt làm ảnh bìa dự án');
+}
+
+// Tải ảnh/video đang xem xuống máy (Cloudinary: thêm fl_attachment để chắc chắn tải được)
+function duanDownloadCurrentMedia() {
+    if (!duanEnsureAdmin()) return;
+    const project = duanCurrentProject();
+    if (!project || !project.media.length) { duanToast('Dự án chưa có ảnh/video để tải', false); return; }
+    const media = duanDetectMedia(project.media[duanViewIndex].url);
+    if (!media) return;
+    let href = media.url;
+    if (/^https:\/\/res\.cloudinary\.com\/.+\/video\/upload\//i.test(href)) {
+        href = href.replace('/video/upload/', '/video/upload/fl_attachment/');
+    } else if (/^https:\/\/res\.cloudinary\.com\/.+\/image\/upload\//i.test(href)) {
+        href = href.replace('/image/upload/', '/image/upload/fl_attachment/');
+    }
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = 'du-an-' + Date.now() + (media.type === 'video' ? '.mp4' : '.jpg');
+    link.target = '_blank';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+// ==================== UPLOAD QUA WEB: TẢI LINK CÓ SẴN VỀ KHO CLOUDINARY ====================
+// Dán link ảnh/video từ trang khác → Cloudinary tự tải file về kho của mình (remote upload),
+// nhờ vậy media không phụ thuộc vào việc trang gốc còn giữ file hay không.
+async function duanUploadRemote(url, type) {
+    const resourceType = type === 'video' ? 'video' : 'image';
+    const presets = [DUAN_CLOUDINARY_PRESET, DUAN_CLOUDINARY_FALLBACK_PRESET].filter(Boolean);
+    let lastErr = null;
+    for (let i = 0; i < presets.length; i += 1) {
+        try {
+            return await duanUploadRemoteWithPreset(url, resourceType, presets[i]);
+        } catch (err) { lastErr = err; }
+    }
+    throw (lastErr || new Error('Không tải được link về Cloudinary'));
+}
+
+async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset) {
+    if (!DUAN_CLOUDINARY_CLOUD_NAME) throw new Error('Chưa cấu hình Cloudinary');
+    const formData = new FormData();
+    formData.append('file', remoteUrl);
+    formData.append('upload_preset', preset);
+    if (DUAN_CLOUDINARY_FOLDER) {
+        formData.append('folder', DUAN_CLOUDINARY_FOLDER);
+        formData.append('asset_folder', DUAN_CLOUDINARY_FOLDER);
+    }
+    const res = await fetch('https://api.cloudinary.com/v1_1/' + DUAN_CLOUDINARY_CLOUD_NAME + '/' + resourceType + '/upload', {
+        method: 'POST',
+        body: formData
+    });
+    if (!res.ok) {
+        let detail = '';
+        try {
+            const data = await res.json();
+            detail = data && data.error && data.error.message ? data.error.message : '';
+        } catch (err) {}
+        throw new Error('Cloudinary lỗi ' + res.status + (detail ? ': ' + detail : ''));
+    }
+    const data = await res.json();
+    if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
+    return data.secure_url;
+}
+
 // ==================== TẢI ẢNH / VIDEO LÊN CLOUDINARY ====================
 // Ảnh: nén trong canvas rồi đưa lên dạng image. Video: gửi nguyên file dạng video
 // (Cloudinary gói free cho tối đa 100MB mỗi file, nên giới hạn ở mức đó).
@@ -1315,6 +1524,12 @@ function duanOnClick(event) {
     const tab = target.closest('[data-duan-cat]');
     if (tab) { duanCategory = tab.dataset.duanCat; duanRenderTabs(); duanRenderGrid(); return; }
 
+    // Công cụ admin trên từng thumbnail (đặt bìa / xoá) — kiểm tra TRƯỚC [data-duan-thumb]
+    const thumbCover = target.closest('[data-duan-thumb-cover]');
+    if (thumbCover) { duanSetProjectCover(Number(thumbCover.dataset.duanThumbCover)); return; }
+    const thumbDel = target.closest('[data-duan-thumb-del]');
+    if (thumbDel) { duanDeleteProjectMedia(Number(thumbDel.dataset.duanThumbDel)); return; }
+
     const thumb = target.closest('[data-duan-thumb]');
     if (thumb) {
         duanViewIndex = Number(thumb.dataset.duanThumb) || 0;
@@ -1343,12 +1558,28 @@ function duanOnClick(event) {
     if (target.closest('[data-duan-add-media]')) { duanOpenForm(duanOpenProjectId, true); return; }
     if (target.closest('[data-duan-edit]')) { duanOpenForm(duanOpenProjectId, false); return; }
     if (target.closest('[data-duan-delete]')) { duanDeleteProject(); return; }
+    if (target.closest('[data-duan-download]')) { duanDownloadCurrentMedia(); return; }
     if (target.closest('[data-duan-reset]')) { duanResetDefaults(); return; }
     if (target.closest('[data-duan-logout]')) { duanSignOut(); return; }
     if (target.closest('[data-duan-add-url]')) { duanAddUrl(); return; }
     if (target.closest('[data-duan-upload]')) {
         if (duanEnsureAdmin()) {
             const input = duanEl('duanFileInput');
+            if (input) input.click();
+        }
+        return;
+    }
+    // Tải ảnh/video lên thẳng 1 dự án (thanh công cụ) hoặc vào dự án đang mở
+    if (target.closest('[data-duan-quick-upload]')) {
+        if (duanEnsureAdmin()) {
+            const input = duanEl('duanQuickInput');
+            if (input) input.click();
+        }
+        return;
+    }
+    if (target.closest('[data-duan-project-upload]')) {
+        if (duanEnsureAdmin()) {
+            const input = duanEl('duanProjectFileInput');
             if (input) input.click();
         }
         return;

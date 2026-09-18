@@ -65,9 +65,16 @@
                     <p class="duan-lead">Ảnh và video sáng tạo của Giang Nguyễn — xem theo từng dự án, cập nhật được trực tiếp từ web.</p>
                 </div>
                 <div id="duanAdminTools" class="hidden duan-actions">
-                    <button type="button" class="duan-btn duan-btn--primary" data-duan-new="1">
+                    <button type="button" class="duan-btn duan-btn--ghost" data-duan-new="1">
                         <i class="ph ph-plus-circle" aria-hidden="true"></i> Thêm dự án
                     </button>
+                    <!-- Tải ảnh/video TRỰC TIẾP TỪ WEB: chọn dự án nhận file rồi bấm Tải lên (giống "Tải ảnh lên" của album) -->
+                    <select id="duanQuickTarget" class="duan-input duan-select-sm" title="Ảnh/video tải lên sẽ vào dự án này" aria-label="Chọn dự án nhận ảnh/video"></select>
+                    <input type="file" id="duanQuickInput" class="hidden" accept="image/*,video/*" multiple onchange="duanHandleQuickFiles(this)">
+                    <button type="button" class="duan-btn duan-btn--primary" data-duan-quick-upload="1" title="Tải ảnh/video từ máy lên Cloudinary rồi thêm vào dự án đang chọn">
+                        <i class="ph ph-upload-simple" aria-hidden="true"></i> Tải ảnh/video lên
+                    </button>
+                    <span id="duanQuickStatus" class="duan-media-status"></span>
                     <button type="button" class="duan-btn duan-btn--ghost" data-duan-reset="1" title="Quay lại 5 danh mục mặc định">
                         <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Mặc định
                     </button>
@@ -113,8 +120,15 @@
                 </div>
                 <div class="duan-actions">
                     <div id="duanProjectAdminTools" class="hidden duan-actions">
-                        <button type="button" class="duan-btn duan-btn--xs duan-btn--primary" data-duan-add-media="1" title="Thêm ảnh/video vào dự án này">
-                            <i class="ph ph-plus" aria-hidden="true"></i> Ảnh/Video
+                        <input type="file" id="duanProjectFileInput" class="hidden" accept="image/*,video/*" multiple onchange="duanHandleProjectFiles(this)">
+                        <button type="button" class="duan-btn duan-btn--xs duan-btn--primary" data-duan-project-upload="1" title="Tải ảnh/video lên dự án này">
+                            <i class="ph ph-upload-simple" aria-hidden="true"></i> Tải lên
+                        </button>
+                        <button type="button" class="duan-btn duan-btn--xs" data-duan-add-media="1" title="Thêm ảnh/video bằng link có sẵn trên web">
+                            <i class="ph ph-link-simple" aria-hidden="true"></i> Link
+                        </button>
+                        <button type="button" class="duan-btn duan-btn--xs" data-duan-download="1" title="Tải ảnh/video đang xem xuống máy">
+                            <i class="ph ph-download-simple" aria-hidden="true"></i>
                         </button>
                         <button type="button" class="duan-btn duan-btn--xs" data-duan-edit="1" title="Sửa thông tin dự án">
                             <i class="ph ph-pencil-simple" aria-hidden="true"></i> Sửa
@@ -122,6 +136,7 @@
                         <button type="button" class="duan-btn duan-btn--xs duan-btn--danger" data-duan-delete="1" title="Xoá dự án">
                             <i class="ph ph-trash" aria-hidden="true"></i>
                         </button>
+                        <span id="duanProjectStatus" class="duan-media-status"></span>
                     </div>
                     <button type="button" class="duan-btn duan-btn--icon" data-duan-close="project" aria-label="Đóng">
                         <i class="ph ph-x" aria-hidden="true"></i>
@@ -205,6 +220,10 @@
                     </button>
                 </div>
                 <p id="duanMediaStatus" class="duan-media-status duan-spacer-sm"></p>
+                <label class="duan-check duan-spacer-sm">
+                    <input type="checkbox" id="duanRemoteFetch" checked>
+                    <span>Tải link về kho Cloudinary (upload qua web) — ảnh/video từ trang khác sẽ được tải về kho của mình; bỏ chọn nếu chỉ muốn dán link trực tiếp.</span>
+                </label>
                 <div id="duanMediaList" class="duan-media-list"></div>
                 <p class="duan-hint">Ảnh được nén tự động (≤1600px), video tối đa 100MB. Link YouTube / Facebook Reels / Vimeo / Google Drive sẽ được nhúng thành trình phát.</p>
 

@@ -123,6 +123,29 @@ body {
 .duan-input::placeholder { color: #6b7280; }
 .duan-input option { background: #0f172a; color: #f3f4f6; }
 textarea.duan-input { resize: vertical; min-height: 4.5rem; }
+/* Ô chọn gọn trong thanh công cụ admin */
+.duan-select-sm {
+    width: auto;
+    min-width: 9rem;
+    max-width: 15rem;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.75rem;
+}
+.duan-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    cursor: pointer;
+}
+.duan-check input {
+    margin-top: 0.15rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
 /* ==================== Badge / chip ==================== */
 .duan-badge {
     display: inline-flex;
@@ -387,6 +410,35 @@ textarea.duan-input { resize: vertical; min-height: 4.5rem; }
     letter-spacing: 0.02em;
     text-transform: uppercase;
 }
+/* Ô bọc mỗi thumbnail (để đặt nút admin lên trên mà không lồng button trong button) */
+.duan-thumb-cell { position: relative; flex: 0 0 auto; }
+/* Nút đặt bìa / xoá ngay trên thumbnail (chỉ admin) — giống nút tải xuống/xoá trong album */
+.duan-thumb-tools {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    display: flex;
+    gap: 0.2rem;
+    z-index: 2;
+}
+.duan-thumb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    padding: 0;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(2, 6, 23, 0.75);
+    color: #ffffff;
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.duan-thumb-btn:hover { background: #2563eb; border-color: #2563eb; }
+.duan-thumb-btn--del:hover { background: #dc2626; border-color: #dc2626; }
 /* ==================== Trình quản lý ảnh/video trong form ==================== */
 .duan-media-list {
     display: grid;
