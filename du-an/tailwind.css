@@ -61,6 +61,10 @@ button, [type="button"] {
 .justify-between { justify-content: space-between; }
 .overflow-hidden { overflow: hidden; }
 .cursor-pointer { cursor: pointer; }
+/* .hidden đặt SAU các utility display để luôn thắng .flex khi ẩn/hiện bằng JS
+   (giống thứ tự khai báo trong Tailwind gốc). du-an.css cũng khai báo lại ở cuối file
+   vì file đó được nạp sau và có thêm các class display tuỳ chỉnh. */
+.hidden { display: none; }
 
 /* ==================== Kích thước ==================== */
 .w-4 { width: 1rem; }

@@ -26,5 +26,11 @@ window.SITE_DATA = {
             "https://res.cloudinary.com/g9uxwrbl/image/upload/album-meme-3.jpg",
             "https://res.cloudinary.com/g9uxwrbl/image/upload/album-meme-4.jpg"
         ]
-    }
+    },
+    // Kho Dự án (trang du-an/): do admin thêm ảnh/video trực tiếp trên web.
+    // null = chưa tuỳ chỉnh → trang du-an hiển thị 5 danh mục mặc định có sẵn trong du-an/du-an.js.
+    // Sau khi admin thêm dự án, giá trị này trở thành mảng, ví dụ:
+    // projects: [{ id, title, category, description, link, linkLabel,
+    //              media: [{ url, type }], createdAt }]
+    projects: null
 };

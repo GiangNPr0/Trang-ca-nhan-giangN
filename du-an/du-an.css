@@ -1,0 +1,551 @@
+/*
+ * du-an/du-an.css — giao diện "Kho Dự án" cho trang du-an/index.html
+ * Nạp SAU tailwind.css nên quy tắc ở đây thắng các utility Tailwind cùng độ ưu tiên.
+ * QUY ƯỚC QUAN TRỌNG: các class dưới đây KHÔNG đặt `display` (trừ vài chỗ cố định, không
+ * bao giờ bị ẩn/hiện) để việc ẩn/hiện bằng cặp class .hidden / .flex luôn hoạt động.
+ * .flex và .hidden được khai báo ở CUỐI file (giống thứ tự của Tailwind: .hidden thắng .flex).
+ */
+
+/* ==================== Nền chung ==================== */
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #0b0f19;
+    color: #f3f4f6;
+}
+.glass-card {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+}
+.project-card {
+    transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.project-card:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px -22px rgba(37, 99, 235, 0.75);
+}
+
+/* ==================== Thanh lọc danh mục ==================== */
+.tab-btn {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+}
+.tab-btn:hover {
+    color: #ffffff;
+    border-color: rgba(147, 197, 253, 0.5);
+}
+.tab-btn.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+.duan-tab-count {
+    display: inline-block;
+    min-width: 1.15rem;
+    margin-left: 0.3rem;
+    padding: 0 0.25rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 0.6875rem;
+    line-height: 1.15rem;
+    text-align: center;
+}
+.tab-btn.active .duan-tab-count {
+    background: rgba(255, 255, 255, 0.3);
+}
+/* Nút lọc danh mục: viền do .tab-btn, phần còn lại do .duan-tab */
+.duan-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.75rem;
+    background: rgba(17, 24, 39, 0.7);
+    color: #d1d5db;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    backdrop-filter: blur(12px);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.duan-tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 0.5rem 0;
+    background: linear-gradient(to bottom, rgba(11, 15, 25, 0.97) 72%, rgba(11, 15, 25, 0));
+    backdrop-filter: blur(6px);
+}
+
+/* ==================== Nút bấm ==================== */
+.duan-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(31, 41, 55, 0.85);
+    color: #e5e7eb;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+.duan-btn i { font-size: 1rem; }
+.duan-btn:hover { background: rgba(55, 65, 81, 0.95); border-color: rgba(255, 255, 255, 0.28); color: #ffffff; }
+.duan-btn:active { transform: translateY(1px); }
+.duan-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.duan-btn--primary { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+.duan-btn--primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+.duan-btn--ghost { background: transparent; }
+.duan-btn--danger { background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.45); color: #fca5a5; }
+.duan-btn--danger:hover { background: #dc2626; border-color: #dc2626; color: #ffffff; }
+.duan-btn--xs { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.6875rem; }
+.duan-btn--xs i { font-size: 0.875rem; }
+.duan-btn--icon { width: 2.25rem; height: 2.25rem; padding: 0; border-radius: 9999px; }
+
+/* ==================== Ô nhập liệu ==================== */
+.duan-label { display: block; margin-bottom: 0.3rem; font-size: 0.75rem; font-weight: 600; color: #9ca3af; }
+.duan-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.85);
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.duan-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
+.duan-input::placeholder { color: #6b7280; }
+.duan-input option { background: #0f172a; color: #f3f4f6; }
+textarea.duan-input { resize: vertical; min-height: 4.5rem; }
+/* ==================== Badge / chip ==================== */
+.duan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background: rgba(37, 99, 235, 0.92);
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 12px rgba(2, 6, 23, 0.35);
+}
+.duan-badge.is-blue { background: rgba(37, 99, 235, 0.92); }
+.duan-badge.is-purple { background: rgba(147, 51, 234, 0.92); }
+.duan-badge.is-pink { background: rgba(219, 39, 119, 0.92); }
+.duan-badge.is-emerald { background: rgba(5, 150, 105, 0.92); }
+.duan-badge.is-amber { background: rgba(217, 119, 6, 0.92); }
+.duan-badge.is-gray { background: rgba(75, 85, 99, 0.92); }
+.duan-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(2, 6, 23, 0.66);
+    color: #e5e7eb;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+}
+
+/* ==================== Bìa dự án ==================== */
+.duan-cover {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #111827;
+    cursor: pointer;
+}
+.duan-cover img,
+.duan-thumb img,
+.duan-media-preview img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.duan-cover img { transition: transform 0.6s ease; }
+.project-card:hover .duan-cover img { transform: scale(1.06); }
+.duan-cover-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1f2937, #0f172a);
+    color: #4b5563;
+    font-size: 2rem;
+}
+.duan-cover-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(2, 6, 23, 0.82) 0%, rgba(2, 6, 23, 0.08) 44%, rgba(2, 6, 23, 0.4) 100%);
+    pointer-events: none;
+}
+.duan-cover-meta {
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    pointer-events: none;
+}
+.duan-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.duan-play i {
+    font-size: 2.75rem;
+    color: rgba(255, 255, 255, 0.94);
+    filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.65));
+    transition: transform 0.25s ease;
+}
+.project-card:hover .duan-play i { transform: scale(1.12); }
+.duan-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ==================== Thống kê ==================== */
+.duan-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(15, 23, 42, 0.6);
+}
+.duan-stat b { font-size: 1.125rem; line-height: 1.2; color: #ffffff; }
+.duan-stat span { font-size: 0.6875rem; color: #9ca3af; }
+
+/* ==================== Khung modal ==================== */
+.duan-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(6px);
+}
+.duan-modal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 52rem;
+    max-height: 92vh;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 1.5rem 1.5rem 0 0;
+    background: #111827;
+    box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.85);
+}
+@media (min-width: 640px) {
+    .duan-modal { align-items: center; padding: 1rem; }
+    .duan-modal-panel { border-radius: 1.25rem; max-height: 90vh; }
+}
+.duan-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(15, 23, 42, 0.6);
+}
+.duan-modal-body {
+    padding: 1rem 1.25rem 1.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.duan-modal-body::-webkit-scrollbar { width: 8px; }
+.duan-modal-body::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+/* ==================== Khung xem media ==================== */
+.duan-viewer {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 0.9rem;
+    background: #000000;
+}
+.duan-viewer img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: zoom-in;
+}
+.duan-viewer video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000000;
+}
+.duan-viewer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.duan-viewer-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.8125rem;
+    text-align: center;
+}
+.duan-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(2, 6, 23, 0.62);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.duan-nav:hover { background: rgba(37, 99, 235, 0.92); }
+.duan-nav--prev { left: 0.5rem; }
+.duan-nav--next { right: 0.5rem; }
+.duan-thumbs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.125rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
+.duan-thumbs::-webkit-scrollbar { height: 6px; }
+.duan-thumbs::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+.duan-thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: 6rem;
+    height: 3.75rem;
+    overflow: hidden;
+    border-radius: 0.6rem;
+    border: 2px solid transparent;
+    background: #1f2937;
+    cursor: pointer;
+}
+.duan-thumb.is-active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); }
+.duan-thumb-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1f2937, #0f172a);
+    color: #e5e7eb;
+    font-size: 1.25rem;
+}
+.duan-thumb-tag {
+    position: absolute;
+    left: 0.25rem;
+    bottom: 0.25rem;
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.35rem;
+    background: rgba(2, 6, 23, 0.72);
+    color: #e5e7eb;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+/* ==================== Trình quản lý ảnh/video trong form ==================== */
+.duan-media-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+@media (min-width: 640px) {
+    .duan-media-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.duan-media-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #1f2937;
+}
+.duan-media-preview { position: relative; height: 5.5rem; background: linear-gradient(135deg, #1f2937, #0f172a); }
+.duan-media-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    font-size: 1.5rem;
+}
+.duan-media-type { position: absolute; top: 0.35rem; left: 0.35rem; }
+.duan-media-actions { display: flex; gap: 0.25rem; padding: 0.375rem; background: rgba(15, 23, 42, 0.88); }
+.duan-media-actions .duan-btn { flex: 1; }
+.duan-empty-inline {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: #6b7280;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+/* ==================== Lightbox ảnh ==================== */
+.duan-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.94);
+}
+.duan-lightbox img {
+    max-width: 92vw;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 0.6rem;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9);
+}
+.duan-lightbox-bar {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+.duan-lightbox-bar > * { pointer-events: auto; }
+
+/* ==================== Toast & ghi chú ==================== */
+.duan-toast {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 110;
+    max-width: 22rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 16px 40px -18px rgba(0, 0, 0, 0.9);
+}
+.duan-toast.is-ok { background: #059669; border-color: #047857; }
+.duan-toast.is-err { background: #dc2626; border-color: #b91c1c; }
+.duan-note {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(251, 191, 36, 0.35);
+    background: rgba(251, 191, 36, 0.08);
+    color: #fcd34d;
+    font-size: 0.75rem;
+}
+
+/* ==================== Trạng thái rỗng ==================== */
+.duan-empty { padding: 2.5rem 1.25rem; border-radius: 1rem; text-align: center; color: #9ca3af; }
+.duan-empty i { font-size: 2.5rem; color: #374151; }
+
+/* ==================== Khung chờ nút Google (GIS) ==================== */
+.duan-google-slot { display: flex; align-items: center; min-height: 40px; }
+
+/* ==================== Giảm chuyển động cho người dùng cần ==================== */
+@media (prefers-reduced-motion: reduce) {
+    .project-card, .duan-cover img, .duan-play i, .duan-nav, .duan-btn { transition: none !important; }
+    .project-card:hover { transform: none; }
+    .project-card:hover .duan-cover img { transform: none; }
+}
+
+.duan-viewer-wrap { position: relative; }
+
+/* ==================== Khối bố cục dùng lại (giữ markup gọn) ==================== */
+.duan-page { min-height: 100vh; padding: 2rem 1rem; }
+@media (min-width: 640px) { .duan-page { padding-left: 1.5rem; padding-right: 1.5rem; } }
+.duan-wrap { width: 100%; max-width: 72rem; margin: 0 auto; }
+.duan-topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.duan-back { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #9ca3af; transition: color 0.2s; }
+.duan-back:hover { color: #ffffff; }
+.duan-head-card { border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25); }
+@media (min-width: 640px) { .duan-head-card { padding: 2rem; } }
+.duan-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.duan-h1 { font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
+@media (min-width: 640px) { .duan-h1 { font-size: 1.875rem; } }
+.duan-lead { font-size: 0.875rem; color: #9ca3af; }
+@media (min-width: 640px) { .duan-lead { font-size: 1rem; } }
+.duan-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+@media (min-width: 768px) { .duan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .duan-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.duan-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+@media (min-width: 640px) { .duan-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.duan-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.duan-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.duan-col { display: flex; flex-direction: column; gap: 0.75rem; }
+.duan-2col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+@media (min-width: 640px) { .duan-2col { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.duan-card { display: flex; flex-direction: column; justify-content: space-between; border-radius: 1rem; overflow: hidden; }
+.duan-card-body { flex: 1 1 auto; min-width: 0; padding: 1.25rem; }
+.duan-card-foot { display: flex; align-items: center; gap: 0.5rem; padding: 0 1.25rem 1.25rem; }
+.duan-cover-tags { position: absolute; top: 0.75rem; left: 0.75rem; display: flex; gap: 0.375rem; flex-wrap: wrap; }
+.duan-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.duan-actions-end { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+.duan-media-tools { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.duan-grow { flex: 1 1 12rem; min-width: 0; }
+.duan-spacer-sm { margin-top: 0.5rem; }
+.duan-spacer { margin-top: 0.75rem; }
+.duan-userchip { display: flex; align-items: center; gap: 0.5rem; }
+.duan-avatar { width: 1.75rem; height: 1.75rem; border-radius: 9999px; object-fit: cover; background: #1f2937; }
+.duan-badge-admin { padding: 0.1rem 0.375rem; border-radius: 0.35rem; background: rgba(245, 158, 11, 0.92); color: #111827; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.02em; }
+.duan-footer { margin-top: 3rem; text-align: center; font-size: 0.75rem; color: #6b7280; }
+.duan-title { font-size: 1.125rem; font-weight: 700; color: #ffffff; }
+.duan-proj-title { margin-bottom: 0.25rem; font-size: 1rem; font-weight: 700; color: #ffffff; }
+.duan-desc { font-size: 0.75rem; color: #9ca3af; }
+.duan-desc-md { margin-top: 0.75rem; font-size: 0.875rem; color: #cbd5e1; white-space: pre-line; }
+.duan-hint { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; }
+.duan-media-status { font-size: 0.75rem; color: #9ca3af; }
+.duan-counter { font-size: 0.75rem; color: #9ca3af; }
+.duan-clamp-1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duan-empty-text { margin-top: 0.5rem; font-size: 0.875rem; }
+
+/* ==================== Tiện ích (đặt CUỐI file để luôn thắng) ==================== */
+.flex { display: flex; }
+.hidden { display: none; }

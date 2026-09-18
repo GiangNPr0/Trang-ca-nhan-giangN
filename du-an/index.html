@@ -4,183 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dự án cá nhân - Giang Nguyễn</title>
-    <meta name="description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
+    <meta name="description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — ảnh, video, vlog giải trí, thời trang, TVC và video beauty.">
     <meta name="theme-color" content="#0b0f19">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Giang Nguyễn">
     <meta property="og:title" content="Dự án cá nhân - Giang Nguyễn">
-    <meta property="og:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
+    <meta property="og:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — ảnh, video, vlog giải trí, thời trang, TVC và video beauty.">
     <meta property="og:image" content="https://res.cloudinary.com/g9uxwrbl/image/upload/w_1200,q_80/album-bts-1.jpg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Dự án cá nhân - Giang Nguyễn">
-    <meta name="twitter:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — nhiếp ảnh, vlog giải trí, thời trang, TVC và video beauty.">
-    <link rel="stylesheet" href="tailwind.css">
+    <meta name="twitter:description" content="Kho dự án & danh mục sáng tạo của Giang Nguyễn — ảnh, video, vlog giải trí, thời trang, TVC và video beauty.">
+    <link rel="icon" type="image/png" href="../image/icon.jpg">
+    <!-- Mở kết nối sớm tới các CDN đang dùng để giảm độ trễ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="dns-prefetch" href="https://i.ytimg.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-        }
-        .glass-card {
-            background: rgba(17, 24, 39, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-        }
-        .project-card:hover {
-            border-color: rgba(59, 130, 246, 0.5);
-            transform: translateY(-4px);
-        }
-        .tab-btn.active {
-            background-color: #2563eb;
-            color: #ffffff;
-            border-color: #2563eb;
-        }
-    </style>
+    <!-- Icon Phosphor: chỉ nạp 2 bộ đang dùng (regular + fill) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css">
+    <!-- Đăng nhập Google: chỉ tài khoản admin mới thấy công cụ thêm ảnh/video -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="tailwind.css">
+    <!-- Giao diện riêng của Kho Dự án: nạp SAU tailwind.css để đè utility trùng tên -->
+    <link rel="stylesheet" href="du-an.css">
 </head>
-<body class="min-h-screen py-10 px-4 sm:px-6">
+<body class="duan-page">
 
-    <div class="max-w-5xl mx-auto">
-        <!-- Nút quay lại trang chủ -->
-        <div class="mb-6">
-            <a href="../" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    <div class="duan-wrap">
+
+        <!-- Thanh trên: quay lại trang chủ + khu vực quản trị -->
+        <div class="duan-topbar">
+            <a href="../" class="duan-back" title="Quay lại trang chủ">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Quay lại trang chủ
             </a>
+
+            <!-- Vùng đăng nhập (hiện khi Google Identity Services sẵn sàng) -->
+            <div id="duanAuthBox" class="hidden">
+                <div id="duanAuthSignedOut">
+                    <div id="duanGoogleBtn" class="duan-google-slot"></div>
+                    <p id="duanAuthNote" class="duan-hint hidden"></p>
+                </div>
+                <div id="duanAuthSignedIn" class="hidden duan-userchip">
+                    <img id="duanUserAvatar" class="duan-avatar" src="" alt="" referrerpolicy="no-referrer">
+                    <span id="duanUserName" class="text-xs font-semibold text-white"></span>
+                    <span id="duanAdminBadge" class="duan-badge-admin hidden">ADMIN</span>
+                    <span id="duanAuthHint" class="text-xs text-gray-400 hidden"></span>
+                    <button type="button" class="duan-btn duan-btn--ghost duan-btn--xs" data-duan-logout="1">Thoát</button>
+                </div>
+            </div>
+        </div>
+        <!-- Tiêu đề + thống kê + công cụ admin -->
+        <header class="glass-card duan-head-card">
+            <div class="duan-head">
+                <div>
+                    <h1 class="duan-h1">📁 Kho Dự án &amp; Danh mục</h1>
+                    <p class="duan-lead">Ảnh và video sáng tạo của Giang Nguyễn — xem theo từng dự án, cập nhật được trực tiếp từ web.</p>
+                </div>
+                <div id="duanAdminTools" class="hidden duan-actions">
+                    <button type="button" class="duan-btn duan-btn--primary" data-duan-new="1">
+                        <i class="ph ph-plus-circle" aria-hidden="true"></i> Thêm dự án
+                    </button>
+                    <button type="button" class="duan-btn duan-btn--ghost" data-duan-reset="1" title="Quay lại 5 danh mục mặc định">
+                        <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Mặc định
+                    </button>
+                    <span id="duanModeChip" class="duan-chip hidden" title="Nơi lưu thay đổi"></span>
+                </div>
+            </div>
+
+            <!-- Thống kê nhanh: dự án / ảnh / video / danh mục -->
+            <div id="duanStats" class="duan-stats"></div>
+
+            <div id="duanDefaultNote" class="duan-note hidden duan-spacer">
+                Đang hiển thị <b>5 danh mục mặc định</b>. Mọi thao tác thêm/sửa/xoá của bạn sẽ được lưu thành dữ liệu thật
+                (vào <code>data.js</code> khi chạy tại máy, hoặc lên bin cloud khi trang chạy online).
+            </div>
+        </header>
+
+        <!-- Thanh lọc theo danh mục (số lượng cập nhật tự động) -->
+        <div class="duan-tab-bar">
+            <div id="duanTabs" class="duan-tabs"></div>
         </div>
 
-        <!-- Header tiêu đề -->
-        <div class="glass-card rounded-2xl p-6 sm:p-8 mb-8 shadow-xl">
-            <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">📁 Kho Dự án & Danh mục</h1>
-            <p class="text-gray-400 text-sm sm:text-base">Khám phá các sản phẩm sáng tạo qua từng danh mục chi tiết của Giang Nguyễn.</p>
+        <!-- Lưới dự án: do du-an.js render -->
+        <div id="duanGrid" class="duan-grid"></div>
+
+        <!-- Trạng thái rỗng -->
+        <div id="duanEmpty" class="glass-card duan-empty hidden">
+            <i class="ph ph-image-square" aria-hidden="true"></i>
+            <p class="duan-empty-text">Chưa có dự án nào trong danh mục này.</p>
         </div>
 
-        <!-- Thanh lọc danh mục (Tabs) -->
-        <div class="flex flex-wrap gap-2 mb-8" id="filter-tabs">
-            <button onclick="filterCategory('all', this)" class="tab-btn active px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Tất cả</button>
-            <button onclick="filterCategory('anh', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Ảnh</button>
-            <button onclick="filterCategory('giai-tri', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Giải trí</button>
-            <button onclick="filterCategory('thoi-trang', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Thời trang</button>
-            <button onclick="filterCategory('tvc', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">TVC</button>
-            <button onclick="filterCategory('video-beauty', this)" class="tab-btn px-4 py-2 rounded-xl text-sm font-medium glass-card text-gray-300 transition-all">Video Beauty/Sản phẩm</button>
-        </div>
-
-        <!-- Lưới danh sách dự án -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="project-grid">
-
-            <!-- Mục: Ảnh -->
-            <div class="project-item glass-card rounded-2xl overflow-hidden project-card transition-all duration-300 flex flex-col justify-between" data-category="anh">
-                <div>
-                    <div class="relative aspect-video bg-gray-800">
-                        <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80" alt="Ảnh" class="w-full h-full object-cover opacity-80">
-                        <span class="absolute top-3 left-3 bg-blue-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full">Ảnh</span>
-                    </div>
-                    <div class="p-5">
-                        <h2 class="text-base font-bold text-white mb-1">Bộ sưu tập nhiếp ảnh nghệ thuật</h2>
-                        <p class="text-gray-400 text-xs">Ghi lại góc nhìn đời sống và phong cảnh với hệ thống máy ảnh chuyên nghiệp.</p>
-                    </div>
-                </div>
-                <div class="px-5 pb-5 pt-0">
-                    <a href="../#albumSection" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem bộ sưu tập</a>
-                </div>
-            </div>
-
-            <!-- Mục: Giải trí -->
-            <div class="project-item glass-card rounded-2xl overflow-hidden project-card transition-all duration-300 flex flex-col justify-between" data-category="giai-tri">
-                <div>
-                    <div class="relative aspect-video bg-gray-800">
-                        <img src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80" alt="Giải trí" class="w-full h-full object-cover opacity-80">
-                        <span class="absolute top-3 left-3 bg-purple-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full">Giải trí</span>
-                    </div>
-                    <div class="p-5">
-                        <h2 class="text-base font-bold text-white mb-1">Vlog & Nội dung giải trí tổng hợp</h2>
-                        <p class="text-gray-400 text-xs">Các video trải nghiệm, hậu trường thú vị và các câu chuyện đời thường.</p>
-                    </div>
-                </div>
-                <div class="px-5 pb-5 pt-0">
-                    <a href="https://www.facebook.com/n.giang62/reels/" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors">Xem chi tiết</a>
-                </div>
-            </div>
-
-            <!-- Mục: Thời trang -->
-            <div class="project-item glass-card rounded-2xl overflow-hidden project-card transition-all duration-300 flex flex-col justify-between" data-category="thoi-trang">
-                <div>
-                    <div class="relative aspect-video bg-gray-800">
-                        <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80" alt="Thời trang" class="w-full h-full object-cover opacity-80">
-                        <span class="absolute top-3 left-3 bg-pink-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full">Thời trang</span>
-                    </div>
-                    <div class="p-5">
-                        <h2 class="text-base font-bold text-white mb-1">Lookbook & Bộ sưu tập thời trang</h2>
-                        <p class="text-gray-400 text-xs">Dự án phối cảnh, chụp lookbook và định hình phong cách cá tính.</p>
-                    </div>
-                </div>
-                <div class="px-5 pb-5 pt-0">
-                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
-                </div>
-            </div>
-
-            <!-- Mục: TVC -->
-            <div class="project-item glass-card rounded-2xl overflow-hidden project-card transition-all duration-300 flex flex-col justify-between" data-category="tvc">
-                <div>
-                    <div class="relative aspect-video bg-gray-800">
-                        <img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80" alt="TVC" class="w-full h-full object-cover opacity-80">
-                        <span class="absolute top-3 left-3 bg-emerald-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full">TVC</span>
-                    </div>
-                    <div class="p-5">
-                        <h2 class="text-base font-bold text-white mb-1">Sản xuất TVC & Quảng cáo thương hiệu</h2>
-                        <p class="text-gray-400 text-xs">Các thước phim quảng cáo doanh nghiệp, sự kiện và truyền thông chuyên nghiệp.</p>
-                    </div>
-                </div>
-                <div class="px-5 pb-5 pt-0">
-                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
-                </div>
-            </div>
-
-            <!-- Mục: Video Beauty/Sản phẩm -->
-            <div class="project-item glass-card rounded-2xl overflow-hidden project-card transition-all duration-300 flex flex-col justify-between" data-category="video-beauty">
-                <div>
-                    <div class="relative aspect-video bg-gray-800">
-                        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80" alt="Video Beauty/Sản phẩm" class="w-full h-full object-cover opacity-80">
-                        <span class="absolute top-3 left-3 bg-amber-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full">Beauty / Sản phẩm</span>
-                    </div>
-                    <div class="p-5">
-                        <h2 class="text-base font-bold text-white mb-1">Review & Video Beauty Sản phẩm</h2>
-                        <p class="text-gray-400 text-xs">Quay dựng chi tiết cận cảnh sản phẩm, mỹ phẩm và công nghệ với ánh sáng Studio.</p>
-                    </div>
-                </div>
-                <div class="px-5 pb-5 pt-0">
-                    <button type="button" onclick="comingSoon(this)" class="block w-full text-center bg-gray-800 hover:bg-blue-600 text-white font-medium text-xs py-2 rounded-xl transition-colors cursor-pointer">Xem chi tiết</button>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Footer nhỏ -->
-        <div class="text-center mt-12 text-gray-500 text-xs">
+        <div class="duan-footer">
             © 2026 Giang Nguyễn. All rights reserved.
         </div>
     </div>
 
-    <!-- Script xử lý bộ lọc tab -->
-    <script>
-        function filterCategory(category, btn) {
-            // Cập nhật trạng thái active cho nút bấm
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
+    <!-- ==================== Modal xem chi tiết dự án ==================== -->
+    <div id="duanProjectModal" class="duan-modal hidden" role="dialog" aria-modal="true" aria-labelledby="duanProjectTitle">
+        <div class="duan-modal-panel">
+            <div class="duan-modal-head">
+                <div class="duan-grow">
+                    <h3 id="duanProjectTitle" class="duan-title duan-clamp-1"></h3>
+                    <p id="duanProjectMeta" class="duan-counter duan-spacer-sm"></p>
+                </div>
+                <div class="duan-actions">
+                    <div id="duanProjectAdminTools" class="hidden duan-actions">
+                        <button type="button" class="duan-btn duan-btn--xs duan-btn--primary" data-duan-add-media="1" title="Thêm ảnh/video vào dự án này">
+                            <i class="ph ph-plus" aria-hidden="true"></i> Ảnh/Video
+                        </button>
+                        <button type="button" class="duan-btn duan-btn--xs" data-duan-edit="1" title="Sửa thông tin dự án">
+                            <i class="ph ph-pencil-simple" aria-hidden="true"></i> Sửa
+                        </button>
+                        <button type="button" class="duan-btn duan-btn--xs duan-btn--danger" data-duan-delete="1" title="Xoá dự án">
+                            <i class="ph ph-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="duan-btn duan-btn--icon" data-duan-close="project" aria-label="Đóng">
+                        <i class="ph ph-x" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="duan-modal-body">
+                <div class="duan-viewer-wrap">
+                    <div id="duanViewer" class="duan-viewer"></div>
+                    <button type="button" class="duan-nav duan-nav--prev" data-duan-nav="prev" aria-label="Media trước">
+                        <i class="ph ph-caret-left" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="duan-nav duan-nav--next" data-duan-nav="next" aria-label="Media tiếp theo">
+                        <i class="ph ph-caret-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="duan-row duan-spacer">
+                    <span id="duanViewerCounter" class="duan-counter"></span>
+                    <span id="duanViewerType" class="duan-chip hidden"></span>
+                </div>
+                <p id="duanProjectDesc" class="duan-desc-md"></p>
+                <div class="duan-row duan-spacer">
+                    <a id="duanProjectLink" class="duan-btn duan-btn--ghost hidden" target="_blank" rel="noopener noreferrer">
+                        <i class="ph ph-arrow-square-out" aria-hidden="true"></i> <span id="duanProjectLinkText"></span>
+                    </a>
+                </div>
+                <div id="duanThumbs" class="duan-thumbs duan-spacer"></div>
+            </div>
+        </div>
+    </div>
 
-            // Lọc hiển thị các item dự án
-            document.querySelectorAll('.project-item').forEach(item => {
-                item.style.display =
-                    (category === 'all' || item.getAttribute('data-category') === category) ? 'flex' : 'none';
-            });
-        }
+    <!-- ==================== Modal thêm / sửa dự án ==================== -->
+    <div id="duanFormModal" class="duan-modal hidden" role="dialog" aria-modal="true" aria-labelledby="duanFormHeading">
+        <div class="duan-modal-panel">
+            <div class="duan-modal-head">
+                <div class="duan-grow">
+                    <h3 id="duanFormHeading" class="duan-title">Thêm dự án</h3>
+                    <p class="duan-counter duan-spacer-sm">Dán link ảnh/video/YouTube/Facebook hoặc tải file trực tiếp lên Cloudinary.</p>
+                </div>
+                <button type="button" class="duan-btn duan-btn--icon" data-duan-close="form" aria-label="Đóng">
+                    <i class="ph ph-x" aria-hidden="true"></i>
+                </button>
+            </div>
 
-        // Mục chưa có trang chi tiết: nhấn chỉ hiển thị thông báo, không nhảy đi đâu cả
-        function comingSoon(btn) {
-            if (btn.textContent.includes('Sắp ra mắt')) return;
-            btn.textContent = 'Sắp ra mắt ✨';
-            setTimeout(() => { btn.textContent = 'Xem chi tiết'; }, 2000);
-        }
-    </script>
+            <form id="duanForm" class="duan-modal-body" onsubmit="duanSubmitForm(event)">
+                <div class="duan-col">
+                    <label class="duan-label" for="duanFormTitleInput">Tiêu đề dự án *</label>
+                    <input id="duanFormTitleInput" class="duan-input" type="text" maxlength="140" required placeholder="VD: Bộ sưu tập nhiếp ảnh nghệ thuật">
+                </div>
+
+                <div class="duan-2col duan-spacer">
+                    <div class="duan-col">
+                        <label class="duan-label" for="duanFormCategory">Danh mục</label>
+                        <select id="duanFormCategory" class="duan-input"></select>
+                    </div>
+                    <div class="duan-col">
+                        <label class="duan-label" for="duanFormLinkLabel">Nhãn nút liên kết</label>
+                        <input id="duanFormLinkLabel" class="duan-input" type="text" maxlength="40" placeholder="Xem bộ sưu tập">
+                    </div>
+                </div>
+
+                <div class="duan-col duan-spacer">
+                    <label class="duan-label" for="duanFormDesc">Mô tả ngắn</label>
+                    <textarea id="duanFormDesc" class="duan-input" rows="3" maxlength="600" placeholder="Vài dòng giới thiệu về dự án..."></textarea>
+                </div>
+
+                <div class="duan-col duan-spacer">
+                    <label class="duan-label" for="duanFormLink">Liên kết ngoài (không bắt buộc)</label>
+                    <input id="duanFormLink" class="duan-input" type="text" placeholder="https://... hoặc ../#albumSection">
+                </div>
+
+                <p class="duan-label duan-spacer">Ảnh / Video của dự án — <span class="duan-hint">phần tử đầu tiên là ảnh bìa</span></p>
+                <div class="duan-media-tools">
+                    <input type="file" id="duanFileInput" class="hidden" accept="image/*,video/*" multiple onchange="duanHandleFiles(this)">
+                    <button type="button" class="duan-btn duan-btn--primary" data-duan-upload="1">
+                        <i class="ph ph-upload-simple" aria-hidden="true"></i> Tải ảnh/video lên
+                    </button>
+                    <input id="duanUrlInput" class="duan-input duan-grow" type="text" placeholder="Dán link ảnh / video / YouTube / Facebook / Drive">
+                    <button type="button" class="duan-btn duan-btn--ghost" data-duan-add-url="1">
+                        <i class="ph ph-link-simple" aria-hidden="true"></i> Thêm link
+                    </button>
+                </div>
+                <p id="duanMediaStatus" class="duan-media-status duan-spacer-sm"></p>
+                <div id="duanMediaList" class="duan-media-list"></div>
+                <p class="duan-hint">Ảnh được nén tự động (≤1600px), video tối đa 100MB. Link YouTube / Facebook Reels / Vimeo / Google Drive sẽ được nhúng thành trình phát.</p>
+
+                <div class="duan-actions-end duan-spacer">
+                    <button type="button" class="duan-btn duan-btn--ghost" data-duan-close="form">Huỷ</button>
+                    <button type="submit" class="duan-btn duan-btn--primary">
+                        <i class="ph ph-floppy-disk" aria-hidden="true"></i> Lưu dự án
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== Lightbox phóng to ảnh ==================== -->
+    <div id="duanLightbox" class="duan-lightbox hidden" role="dialog" aria-modal="true" aria-label="Xem ảnh phóng to">
+        <img id="duanLightboxImg" src="" alt="">
+        <div class="duan-lightbox-bar">
+            <span id="duanLightboxCaption" class="duan-chip"></span>
+            <button type="button" class="duan-btn duan-btn--icon" data-duan-close="lightbox" aria-label="Đóng ảnh">
+                <i class="ph ph-x" aria-hidden="true"></i>
+            </button>
+        </div>
+        <button type="button" class="duan-nav duan-nav--prev" data-duan-lb-nav="prev" aria-label="Ảnh trước">
+            <i class="ph ph-caret-left" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="duan-nav duan-nav--next" data-duan-lb-nav="next" aria-label="Ảnh tiếp theo">
+            <i class="ph ph-caret-right" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <!-- Thông báo nhanh -->
+    <div id="duanToast" class="duan-toast hidden" role="status" aria-live="polite"></div>
+
+    <!-- Dữ liệu dùng chung của trang (đọc để lấy danh sách dự án) + logic Kho Dự án -->
+    <script src="../data.js"></script>
+    <script src="du-an.js"></script>
 </body>
 </html>

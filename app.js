@@ -330,8 +330,17 @@ function setupDonateQrEffect() {
       renderMessageTopRated(galleryStore.messages);
   }
 
+  // `projects` = Kho Dự án ở trang du-an (xem du-an/du-an.js). Chuẩn hoá ở đây chỉ LỌC dữ liệu hỏng,
+  // KHÔNG viết lại từng trường — và bắt buộc phải giữ khoá này, nếu không mỗi lần trang chủ tự lưu
+  // (data.js / server / jsonbin) sẽ xoá mất toàn bộ ảnh-video mà admin đã thêm ở trang Dự án.
+  // null = chưa tuỳ chỉnh → trang du-an hiện 5 danh mục mặc định; mảng (kể cả []) = dữ liệu thật.
+  function normalizeProjects(record) {
+      if (!record || !Array.isArray(record.projects)) return null;
+      return record.projects.filter(item => item && typeof item === 'object' && String(item.title || '').trim());
+  }
+
   function normalizeGalleryStore(record) {
-      if (Array.isArray(record)) return { messages: record, ratings: {}, albums: { bts: [], albummeme: [] } };
+      if (Array.isArray(record)) return { messages: record, ratings: {}, albums: { bts: [], albummeme: [] }, projects: null };
       const albums = record && record.albums && typeof record.albums === 'object' ? record.albums : {};
       return {
           messages: Array.isArray(record?.messages) ? record.messages : [],
@@ -339,7 +348,8 @@ function setupDonateQrEffect() {
           albums: {
               bts: Array.isArray(albums.bts) ? albums.bts : [],
               albummeme: Array.isArray(albums.albummeme) ? albums.albummeme : []
-          }
+          },
+          projects: normalizeProjects(record)
       };
   }
 
