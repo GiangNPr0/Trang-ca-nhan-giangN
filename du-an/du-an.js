@@ -86,13 +86,13 @@ function duanEscape(value) {
         .replace(/'/g, '&#39;');
 }
 
-function duanToast(message, ok) {
+function duanToast(message, ok, ms) {
     const toast = duanEl('duanToast');
     if (!toast) return;
     toast.textContent = message;
     toast.className = 'duan-toast ' + (ok ? 'is-ok' : 'is-err');
     clearTimeout(window.__duanToastTimer);
-    window.__duanToastTimer = setTimeout(() => toast.classList.add('hidden'), 3600);
+    window.__duanToastTimer = setTimeout(() => toast.classList.add('hidden'), Number(ms) || 3600);
 }
 
 function duanShow(el) {
@@ -407,20 +407,67 @@ function duanFormTargetFolder() {
 function duanRenderFormFolderHint() {
     const hint = duanEl('duanFormFolderHint');
     if (!hint) return;
-    hint.textContent = 'Thư mục Cloudinary: ' + duanFormTargetFolder() +
+    let text = 'Thư mục Cloudinary: ' + duanFormTargetFolder() +
         (DUAN_FOLDER_PER_PROJECT ? '  (mỗi dự án một thư mục riêng)' : '');
+    if (duanWrongFolderInfo) text = '⚠ ' + text + ' — nhưng media vừa rồi lại vào "' + duanWrongFolderInfo.landed + '"';
+    hint.textContent = text;
+}
+
+// Ghi chú cố định (chỉ admin): preset Cloudinary đang ghi đè thư mục dự án → hướng dẫn sửa ngay tại trang
+function duanRenderConfigNote() {
+    const note = duanEl('duanConfigNote');
+    if (!note) return;
+    const info = duanWrongFolderInfo;
+    const show = duanIsAdmin() && !!info;
+    note.classList.toggle('hidden', !show);
+    if (!show) return;
+    const presetErr = duanLastPresetError ? ' (preset "' + duanLastPresetError.preset + '" bị lỗi: ' + duanLastPresetError.message + ')' : '';
+    const fix = duanLastPresetError
+        ? 'Cách sửa (chọn 1): ① tạo upload preset "' + duanLastPresetError.preset + '" — Settings → Upload → Add upload preset, Signing mode = Unsigned, để ô Folder TRỐNG; hoặc ② xoá trắng ô Folder của preset "' + info.preset + '" đang dùng.'
+        : 'Cách sửa: Settings → Upload → mở preset "' + info.preset + '" → xoá trắng ô Folder (chế độ Dynamic) rồi Save.';
+    note.textContent = '⚠ Ảnh/video đang vào "' + info.landed + '" thay vì "' + info.target + '" — preset ' + info.preset + presetErr + ' ' + fix;
 }
 
 // Preset "Fixed folder" sẽ khiến Cloudinary bỏ qua thư mục gửi kèm → cảnh báo 1 lần cho admin biết
 let duanWarnedFolderMismatch = false;
-function duanCheckUploadFolder(data, targetFolder) {
-    if (duanWarnedFolderMismatch || !DUAN_FOLDER_PER_PROJECT || !targetFolder) return;
-    const landed = String((data && (data.asset_folder || data.folder)) || '').replace(/\/+$/, '');
-    if (!landed || landed === targetFolder) return;
+let duanWrongFolderInfo = null;          // { landed, target, preset } — dùng cho ghi chú cấu hình
+let duanLastPresetError = null;          // { preset, message } preset ưu tiên bị lỗi (thường là chưa tạo)
+
+// Thư mục suy ra từ URL trả về (chỉ là gợi ý: ở dynamic folder mode, đường dẫn URL có thể KHÔNG chứa folder)
+function duanFolderFromUrl(url) {
+    const match = String(url || '').match(/\/upload\/(?:v\d+\/)?(.*)$/);
+    if (!match) return '';
+    const rest = match[1];
+    const cut = rest.lastIndexOf('/');
+    return cut === -1 ? '' : rest.slice(0, cut);
+}
+
+// Ghi nhận thư mục THỰC TẾ mà Cloudinary đã xếp media vào (asset_folder → folder → suy từ URL)
+function duanLandedFolder(data) {
+    const raw = (data && (data.asset_folder || data.folder)) || duanFolderFromUrl(data && data.secure_url) || '';
+    return String(raw).replace(/\/+$/, '');
+}
+
+// Nối thêm cảnh báo thư mục vào thông báo lưu/tải lên (nếu có) để admin không bỏ sót khi toast thành công ghi đè
+function duanNoticeText(message) {
+    return duanWrongFolderInfo
+        ? message + ' — ⚠ media vào "' + duanWrongFolderInfo.landed + '" thay vì "' + duanWrongFolderInfo.target + '" (xem ghi chú vàng ở đầu trang)'
+        : message;
+}
+
+function duanWarnWrongFolder(landed, targetFolder, preset) {
+    duanWrongFolderInfo = { landed: landed, target: targetFolder || '(gốc kho)', preset: preset };
+    if (duanWarnedFolderMismatch) return;
     duanWarnedFolderMismatch = true;
-    console.warn('Cloudinary xếp media vào "' + landed + '" thay vì "' + targetFolder +
-        '": upload preset đang cố định Folder. Đổi preset sang Folder = Dynamic để chia thư mục theo dự án.');
-    duanToast('⚠ Media vào "' + landed + '" thay vì "' + targetFolder + '": preset Cloudinary đang cố định Folder — đổi sang Dynamic để chia thư mục theo dự án', false);
+    const where = landed ? '"' + landed + '"' : 'thư mục gốc (không có folder)';
+    const presetErr = duanLastPresetError
+        ? ' Preset "' + duanLastPresetError.preset + '" bị lỗi: ' + duanLastPresetError.message + '.'
+        : '';
+    console.warn('Media vào ' + where + ' thay vì "' + (targetFolder || '') + '" (preset ' + preset + ').' + presetErr +
+        ' Cách sửa: tạo preset "' + DUAN_CLOUDINARY_PRESET + '" (Unsigned, Folder TRỐNG) hoặc xoá trắng ô Folder của preset "' + preset + '".');
+    duanToast('⚠ Media vào ' + where + ' thay vì "' + (targetFolder || '') + '" (preset ' + preset + ').' + presetErr +
+        ' Cách sửa: xem ghi chú vàng ở đầu trang.', false, 12000);
+    duanRenderAdminTools();
 }
 
 // Admin sửa/xoá danh mục MẶC ĐỊNH → các mục đó thành dữ liệu thật để lần lưu sau ghi vào store
@@ -521,7 +568,7 @@ async function duanSaveNow(okMessage) {
         if (saved && typeof saved === 'object' && Array.isArray(saved.projects)) duanFullStore = saved;
         else duanWarnServerMissingProjects();
         duanClearDirty();
-        duanToast(okMessage || '✓ Đã lưu dự án lên máy chủ', true);
+        duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên máy chủ'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
         return;
     }
 
@@ -539,7 +586,7 @@ async function duanSaveNow(okMessage) {
         if (record && typeof record === 'object' && Array.isArray(record.projects)) duanFullStore = record;
         else duanWarnServerMissingProjects();
         duanClearDirty();
-        duanToast(okMessage || '✓ Đã lưu dự án lên cloud', true);
+        duanToast(duanNoticeText(okMessage || '✓ Đã lưu dự án lên cloud'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
         return;
     }
 
@@ -547,7 +594,7 @@ async function duanSaveNow(okMessage) {
     const result = await duanWriteDataFile();
     if (result === 'saved') {
         duanClearDirty();
-        duanToast((okMessage ? okMessage + ' ' : '✓ ') + 'đã ghi vào data.js', true);
+        duanToast(duanNoticeText((okMessage ? okMessage + ' ' : '✓ ') + 'đã ghi vào data.js'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
     } else if (result === 'cancelled') {
         duanToast('Đã huỷ lưu dự án', false);
     } else {
@@ -890,6 +937,8 @@ function duanRenderAdminTools() {
 
     // Ô chọn dự án nhận ảnh/video tải lên (giống album: chọn album rồi bấm Tải ảnh lên)
     duanRenderQuickTarget();
+    // Ghi chú khi preset Cloudinary đang ghi đè thư mục dự án
+    duanRenderConfigNote();
 }
 // ==================== XEM DỰ ÁN: ẢNH / VIDEO ====================
 function duanOpenProject(id) {
@@ -1296,7 +1345,7 @@ async function duanHandleFiles(input) {
         }
     }
     if (status) status.textContent = done ? '✓ Đã tải lên ' + done + ' file' : '';
-    if (done) duanToast('✓ Đã thêm ' + done + ' file vào dự án', true);
+    if (done) duanToast(duanNoticeText('✓ Đã thêm ' + done + ' file vào dự án'), !duanWrongFolderInfo, duanWrongFolderInfo ? 12000 : 3600);
 }
 // ==================== TẢI NHANH ẢNH/VIDEO TỪ WEB (giống "Tải ảnh lên" của album) ====================
 // Ô chọn dự án nhận file, nằm trong thanh công cụ admin
@@ -1473,7 +1522,12 @@ async function duanUploadRemoteWithPreset(remoteUrl, resourceType, preset, folde
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
-    duanCheckUploadFolder(data, targetFolder);
+    const landed = duanLandedFolder(data);
+    if (DUAN_FOLDER_PER_PROJECT && landed !== (targetFolder || '')) {
+        duanWarnWrongFolder(landed, targetFolder, preset);
+    } else {
+        console.info('[Kho Dự án] Đã tải link về thư mục "' + landed + '" (preset ' + preset + ')');
+    }
     return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
 
@@ -1525,14 +1579,22 @@ function duanReadVideoSize(file) {
     });
 }
 
-// Thử preset riêng của Kho Dự án trước; nếu preset đó chưa được tạo thì dùng preset của trang chủ
+// Thử preset riêng của Kho Dự án trước; nếu preset đó chưa được tạo thì dùng preset của trang chủ.
+// Ghi lại lỗi của preset ưu tiên để cảnh báo rõ nguyên nhân khi media vào sai thư mục.
 async function duanUploadWithFallback(payload, namePrefix, resourceType, folder) {
     const presets = [DUAN_CLOUDINARY_PRESET, DUAN_CLOUDINARY_FALLBACK_PRESET].filter(Boolean);
     let lastErr = null;
     for (let i = 0; i < presets.length; i += 1) {
         try {
             return await duanUploadToCloudinary(payload, resourceType, namePrefix, presets[i], folder);
-        } catch (err) { lastErr = err; }
+        } catch (err) {
+            lastErr = err;
+            if (i === 0 && presets.length > 1) {
+                // Thường gặp: preset chưa được tạo trong Cloudinary → báo cho admin biết để tạo
+                duanLastPresetError = { preset: presets[0], message: (err && err.message) || 'lỗi không rõ' };
+                console.warn('Preset "' + presets[0] + '" không dùng được (' + duanLastPresetError.message + ') → tạm dùng "' + presets[1] + '".');
+            }
+        }
     }
     throw (lastErr || new Error('Không tải được lên Cloudinary'));
 }
@@ -1564,7 +1626,13 @@ async function duanUploadToCloudinary(payload, resourceType, namePrefix, preset,
     }
     const data = await res.json();
     if (!data || !data.secure_url) throw new Error('Cloudinary không trả về URL');
-    duanCheckUploadFolder(data, targetFolder);
+    // Kiểm tra media có vào ĐÚNG thư mục dự án không (preset cố định Folder sẽ ghi đè thư mục gửi kèm)
+    const landed = duanLandedFolder(data);
+    if (DUAN_FOLDER_PER_PROJECT && landed !== (targetFolder || '')) {
+        duanWarnWrongFolder(landed, targetFolder, preset);
+    } else {
+        console.info('[Kho Dự án] Đã upload vào thư mục "' + landed + '" (preset ' + preset + ')');
+    }
     // Trả kèm kích thước thật để bìa/thumbnail chọn đúng khung dọc hay ngang ngay từ đầu
     return { url: data.secure_url, width: Number(data.width) || 0, height: Number(data.height) || 0 };
 }
