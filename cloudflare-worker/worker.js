@@ -1,25 +1,42 @@
 /**
  * =====================================================================================
  *  PROXY BẢO MẬT cho trang cá nhân Giang Nguyễn  (Cloudflare Worker)
+ *
+ *  VERSION: 2026-09-19-b  (bản mới — phải có dòng này và có hàm errorStatus() bên dưới)
+ *  Bản này khác bản cũ (258 dòng) ở 3 điểm — nếu file bạn mở KHÔNG có 3 điểm này là bản CŨ:
+ *     1) verifyGoogle(request, env)  → truyền `env` vào (bản cũ thiếu → lỗi "env is not defined")
+ *     2) function errorStatus(err)   → thay cho `err.status = status` (bản cũ bị editor báo lỗi kiểu)
+ *     3) normStore() có `if (hasProjectsKey(r)) store.projects = normProjects(r);`
+ *        → GIỮ KHOÁ `projects` của Kho Dự án (bản cũ xoá mất khoá này mỗi lần ghi bin)
  * =====================================================================================
  *  Mục đích: giữ khoá jsonbin ở PHÍA SERVER → file web không còn khoá, người lạ không thể
  *            ghi đè/xoá bin. Người dùng thường chỉ có thể: đọc dữ liệu, gửi 1 lời nhắn,
- *            thả/bỏ tim (mỗi lần ±1). Sửa/xoá lời nhắn & quản lý album: chỉ email admin.
+ *            thả/bỏ tim (mỗi lần ±1). Sửa/xoá lời nhắn, quản lý album & Kho Dự án: chỉ admin.
  *
- *  Cấu hình (Cloudflare Dashboard → Workers & Pages → Worker của bạn → Settings → Variables):
- *    - JSONBIN_MASTER_KEY  : Secret  (BẮT BUỘC) – khoá master jsonbin.io
- *    - JSONBIN_BIN_ID      : Text    (tuỳ chọn) – mặc định dùng bin của trang
- *    - ADMIN_EMAILS        : Text    (tuỳ chọn) – danh sách email admin, cách nhau dấu phẩy
- *    - ALLOWED_ORIGINS     : Text    (tuỳ chọn) – các origin được phép, cách nhau dấu phẩy.
- *                            Để trống = cho phép mọi origin (tiện khi mở trang bằng file://).
+ *  Cấu hình (Cloudflare Dashboard → Workers & Pages → Worker → Settings → Variables):
+ *    - JSONBIN_MASTER_KEY : Secret (BẮT BUỘC) – khoá master jsonbin.io
+ *    - JSONBIN_BIN_ID     : Text (tuỳ chọn) – mặc định dùng bin của trang
+ *    - ADMIN_EMAILS       : Text (tuỳ chọn) – danh sách email admin, cách nhau dấu phẩy
+ *    - ALLOWED_ORIGINS    : Text (tuỳ chọn) – origin được phép, cách nhau dấu phẩy.
+ *                           Để trống = cho phép mọi origin (tiện khi mở trang bằng file://)
  *
  *  API:
  *    GET  /data     → { record: { messages, ratings, albums, projects } }
- *    POST /post     → { message: {message, image, time} } + header X-Google-Token
- *    POST /favorite → { deltas: [{ image, delta }] }      + header X-Google-Token
- *    POST /admin    → { store }                           + header X-Google-Token (phải là admin)
+ *    POST /post     → { message: { message, image, time } } + header X-Google-Token
+ *    POST /favorite → { deltas: [{ image, delta }] }        + header X-Google-Token
+ *    POST /admin    → { store }                             + header X-Google-Token (admin)
+ *
+ *  ⚠ LƯU Ý QUAN TRỌNG: normStore() là "DANH SÁCH TRẮNG". Mọi khoá không được nhắc trong đó sẽ
+ *  bị XOÁ khỏi bin mỗi lần ghi (khách gửi lời nhắn, thả tim, admin lưu). Khoá của trang Dự án
+ *  là `projects` — bản này GIỮ NGUYÊN khoá đó (xem normProjects / hasProjectsKey).
+ *
+ *  File viết bằng JavaScript thuần + JSDoc. Trình soạn thảo của Cloudflare có kiểm tra kiểu,
+ *  nên mọi hàm dùng `env` đều đã khai báo tham số `@param {Env} env` → không còn cảnh báo
+ *  "Cannot find name 'env'"; `httpError` cũng không còn báo "Property 'status' does not exist".
  * =====================================================================================
  */
+
+/** @typedef {Record<string, string>} Env */
 
 const DEFAULT_BIN_ID = '6a9fd4f2ac6210605ab2e044';
 const DEFAULT_ADMIN_EMAILS = 'n.giang06022000@gmail.com,bichngocng1908@gmail.com';
@@ -28,6 +45,10 @@ const MAX_MESSAGES = 150;      // số lời nhắn tối đa giữ lại (bin f
 const MAX_MESSAGE_LEN = 1000;
 
 export default {
+  /**
+   * @param {Request} request
+   * @param {Env} env
+   */
   async fetch(request, env) {
     const url = new URL(request.url);
     const cors = corsHeaders(request, env);
@@ -48,29 +69,25 @@ export default {
       }
       return json({ error: 'Không tìm thấy đường dẫn ' + url.pathname }, cors, 404);
     } catch (err) {
-      const status = err && err.status ? err.status : 500;
-      return json({ error: String((err && err.message) || err) }, cors, status);
+      return json({ error: String((err && /** @type {any} */ (err).message) || err) }, cors, errorStatus(err));
     }
   }
 };
 
 // ----- CORS -----
-// ----- CORS -----
-// Đọc JSON từ request, trả lỗi 400 rõ ràng nếu dữ liệu không phải JSON hợp lệ
-async function readJson(request) {
-  try { return await request.json(); }
-  catch (err) { throw httpError(400, 'Dữ liệu gửi lên không phải JSON hợp lệ'); }
-}
-
+/**
+ * @param {Request} request
+ * @param {Env} env
+ */
 function corsHeaders(request, env) {
-  const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   const origin = request.headers.get('Origin') || '';
   let allow = '*';
   if (allowed.indexOf('*') !== -1) {
     // Có '*' trong danh sách = cho phép MỌI origin (kể cả mở file:// trực tiếp trên máy)
     allow = origin || '*';
   } else if (allowed.length) {
-    allow = allowed.includes(origin) ? origin : allowed[0];
+    allow = allowed.indexOf(origin) !== -1 ? origin : allowed[0];
   } else if (origin) {
     allow = origin;
   }
@@ -82,7 +99,19 @@ function corsHeaders(request, env) {
     'Vary': 'Origin'
   };
 }
+/**
+ * @param {Request} request
+ */
+async function readJson(request) {
+  try { return await request.json(); }
+  catch (err) { throw httpError(400, 'Dữ liệu gửi lên không phải JSON hợp lệ'); }
+}
 
+/**
+ * @param {any} body
+ * @param {Record<string, string>} cors
+ * @param {number} [status]
+ */
 function json(body, cors, status) {
   return new Response(JSON.stringify(body), {
     status: status || 200,
@@ -94,12 +123,16 @@ function json(body, cors, status) {
 }
 
 // ----- jsonbin -----
+/** @param {Env} env */
 function binId(env) { return env.JSONBIN_BIN_ID || DEFAULT_BIN_ID; }
 
+/** @param {Env} env */
 function adminEmails(env) {
-  return String(env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAILS).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  return String(env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAILS).split(',')
+    .map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
 }
 
+/** @param {Env} env */
 async function readBin(env) {
   const res = await fetch(`https://api.jsonbin.io/v3/b/${binId(env)}/latest`, {
     headers: { 'X-Master-Key': env.JSONBIN_MASTER_KEY },
@@ -109,6 +142,10 @@ async function readBin(env) {
   return res.json();
 }
 
+/**
+ * @param {Env} env
+ * @param {any} store
+ */
 async function writeBin(env, store) {
   const res = await fetch(`https://api.jsonbin.io/v3/b/${binId(env)}`, {
     method: 'PUT',
@@ -116,12 +153,16 @@ async function writeBin(env, store) {
     body: JSON.stringify(store)
   });
   if (!res.ok) {
-    const them = (res.status === 400 || res.status === 413) ? ' (có thể do dữ liệu vượt giới hạn ~100KB của bin free)' : '';
+    const them = (res.status === 400 || res.status === 413)
+      ? ' (có thể do dữ liệu vượt giới hạn ~100KB của bin free)' : '';
     throw new Error('Ghi jsonbin thất bại: ' + res.status + them);
   }
   return res.json();
 }
 
+/**
+ * @param {any} record
+ */
 function normStore(record) {
   const r = record && record.record ? record.record : (record || {});
   const albums = (r && r.albums && typeof r.albums === 'object') ? r.albums : {};
@@ -136,9 +177,9 @@ function normStore(record) {
 
   // ===== KHO DỰ ÁN (trang du-an) — KHÔNG ĐƯỢC BỎ QUA =====
   // `projects` là dữ liệu của Kho Dự án (du-an/index.html + du-an/du-an.js): danh sách dự án kèm
-  // URL ảnh/video đã tải lên Cloudinary. Vì `normStore` là DANH SÁCH TRẮNG (whitelist), thiếu khoá
-  // này thì MỖI lần ghi bin (gửi lời nhắn, thả tim, admin lưu) khoá đó bị XOÁ SẠCH khỏi jsonbin →
-  // trang Dự án báo "cloud đã nhận nhưng KHÔNG trả về khoá projects" và ảnh vừa thêm bị mất.
+  // URL ảnh/video đã tải lên Cloudinary. Vì `normStore` là DANH SÁCH TRẮNG, thiếu khoá này thì
+  // MỖI lần ghi bin (gửi lời nhắn, thả tim, admin lưu) khoá đó bị XOÁ SẠCH khỏi jsonbin →
+  // trang Dự án báo "cloud nhận dữ liệu nhưng BỎ mất khoá projects" và ảnh vừa thêm bị mất.
   //   • mảng (kể cả []) = dữ liệu thật của admin → giữ nguyên như bản gửi lên
   //   • null            = "chưa tuỳ chỉnh" (trang du-an dùng 5 danh mục mặc định) → giữ null
   if (hasProjectsKey(r)) store.projects = normProjects(r);
@@ -146,7 +187,10 @@ function normStore(record) {
   return store;
 }
 
-// null = nguồn dữ liệu KHÔNG có khoá `projects` (chưa tuỳ chỉnh) | mảng = dữ liệu thật của admin
+/**
+ * null = nguồn dữ liệu KHÔNG có khoá `projects` (chưa tuỳ chỉnh) | mảng = dữ liệu thật của admin
+ * @param {any} r
+ */
 function normProjects(r) {
   const list = r && r.projects;
   if (!Array.isArray(list)) return null;
@@ -155,12 +199,18 @@ function normProjects(r) {
   });
 }
 
+/** @param {any} r */
 function hasProjectsKey(r) {
   return !!r && Object.prototype.hasOwnProperty.call(r, 'projects');
 }
-
-// ----- Google: xác thực ID token bằng endpoint tokeninfo (không cần thư viện) -----
-async function verifyGoogle(request) {
+// ----- Google: xác thực ID token qua endpoint tokeninfo (không cần thư viện) -----
+/**
+ * Trong Worker, `env` KHÔNG phải biến toàn cục — bắt buộc truyền vào qua tham số,
+ * nếu không sẽ lỗi "env is not defined" (và trình soạn thảo báo "Cannot find name 'env'").
+ * @param {Request} request
+ * @param {Env} env
+ */
+async function verifyGoogle(request, env) {
   const token = request.headers.get('X-Google-Token');
   if (!token) throw httpError(401, 'Thiếu token đăng nhập Google');
   const res = await fetch(GOOGLE_TOKENINFO + encodeURIComponent(token));
@@ -168,7 +218,7 @@ async function verifyGoogle(request) {
   const info = await res.json();
   if (!info || !info.email) throw httpError(401, 'Token Google không có email');
   // (Tuỳ chọn) chỉ nhận token phát hành cho đúng ứng dụng của trang
-  if (env.GOOGLE_CLIENT_ID && info.aud !== env.GOOGLE_CLIENT_ID) {
+  if (env && env.GOOGLE_CLIENT_ID && info.aud !== env.GOOGLE_CLIENT_ID) {
     throw httpError(401, 'Token Google không thuộc ứng dụng này');
   }
   return {
@@ -178,23 +228,44 @@ async function verifyGoogle(request) {
   };
 }
 
+/**
+ * Tạo Error kèm mã trạng thái HTTP.
+ * Dùng Object.assign để trình kiểm tra kiểu không báo
+ * "Property 'status' does not exist on type 'Error'".
+ * @param {number} status
+ * @param {string} message
+ */
 function httpError(status, message) {
-  const err = new Error(message);
-  err.status = status;
-  return err;
+  return Object.assign(new Error(message), { status: status });
 }
 
+/** @param {any} err */
+function errorStatus(err) {
+  const status = err && /** @type {any} */ (err).status;
+  return typeof status === 'number' ? status : 500;
+}
+
+/**
+ * @param {any} value
+ * @param {number} max
+ */
 function clip(value, max) { return String(value == null ? '' : value).slice(0, max); }
 
+/** @param {any} url */
 function isCloudinaryUrl(url) {
   return typeof url === 'string' && url.length < 600 && /^https:\/\/res\.cloudinary\.com\/[^\s"']+$/i.test(url);
 }
-
 // ===================== CÁC THAO TÁC =====================
 
-// Gửi 1 lời nhắn mới: xác thực Google → chèn vào bin (không cho ghi đè toàn bộ dữ liệu)
+/**
+ * Gửi 1 lời nhắn mới: xác thực Google → chèn vào bin (không cho ghi đè toàn bộ dữ liệu).
+ * Lưu ý: `readBin` → `normStore` → `writeBin` nên bin GIỮ NGUYÊN `projects` (Kho Dự án).
+ * @param {Request} request
+ * @param {Env} env
+ * @param {any} body
+ */
 async function handlePost(request, env, body) {
-  const user = await verifyGoogle(request);
+  const user = await verifyGoogle(request, env);
   const input = (body && body.message) || {};
   const text = clip(input.message, MAX_MESSAGE_LEN).trim();
   if (!text) throw httpError(400, 'Lời nhắn trống');
@@ -214,9 +285,15 @@ async function handlePost(request, env, body) {
   return { record: normStore(saved) };
 }
 
-// Thả/bỏ tim: chỉ cho cộng/trừ ĐÚNG 1 đơn vị cho mỗi ảnh trong 1 lần gọi
+/**
+ * Thả/bỏ tim: chỉ cho cộng/trừ ĐÚNG 1 đơn vị cho mỗi ảnh trong 1 lần gọi.
+ * Cũng đi qua normStore nên không làm mất `projects`.
+ * @param {Request} request
+ * @param {Env} env
+ * @param {any} body
+ */
 async function handleFavorite(request, env, body) {
-  await verifyGoogle(request);
+  await verifyGoogle(request, env);
   const deltas = Array.isArray(body && body.deltas) ? body.deltas.slice(0, 50) : [];
   const store = normStore(await readBin(env));
   let changed = 0;
@@ -236,17 +313,22 @@ async function handleFavorite(request, env, body) {
   return { record: normStore(saved) };
 }
 
-// Ghi toàn bộ dữ liệu (sửa/xoá lời nhắn, thêm/xoá ảnh album): CHỈ email admin
+/**
+ * Ghi toàn bộ dữ liệu (sửa/xoá lời nhắn, thêm/xoá ảnh album, Kho Dự án): CHỈ email admin.
+ * Van an toàn: nếu bản gửi lên THIẾU khoá `projects` (trình duyệt còn cache JS cũ) thì GIỮ NGUYÊN
+ * Kho Dự án đang có trong bin, không xoá đi.
+ * @param {Request} request
+ * @param {Env} env
+ * @param {any} body
+ */
 async function handleAdmin(request, env, body) {
-  const user = await verifyGoogle(request);
+  const user = await verifyGoogle(request, env);
   if (adminEmails(env).indexOf(user.email) === -1) {
     throw httpError(403, 'Tài khoản này không phải quản trị viên');
   }
   const input = body && body.store;
   if (!input || typeof input !== 'object') throw httpError(400, 'Thiếu dữ liệu cần lưu');
 
-  // An toàn chống mất dữ liệu: nếu bản gửi lên KHÔNG có khoá `projects` (ví dụ trình duyệt còn
-  // cache bản du-an.js/app.js cũ) thì GIỮ NGUYÊN Kho Dự án đang có trong bin, không xoá đi.
   const next = normStore(input);
   if (!hasProjectsKey(input)) {
     const current = normStore(await readBin(env));
