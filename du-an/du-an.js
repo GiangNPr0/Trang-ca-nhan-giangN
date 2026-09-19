@@ -38,7 +38,9 @@ const DUAN_THUMB_WIDTH = { card: 640, viewer: 1600, small: 240, poster: 640 };
 
 // Google + proxy: dùng CHUNG cấu hình với trang chủ để tận dụng phiên đăng nhập sẵn có
 const DUAN_GOOGLE_CLIENT_ID = '390847354134-gur7ga9qgd71j1uvpsdl3js716cnifk0.apps.googleusercontent.com';
-const DUAN_PROXY_URL = 'https://giangn.n-giang06022000.workers.dev';
+// Địa chỉ Worker proxy. Khi thử nghiệm cục bộ với mock-proxy.ps1 có thể ghi đè trước khi nạp du-an.js:
+//   <script>window.DUAN_PROXY_URL_OVERRIDE = 'http://localhost:8099';</script>
+const DUAN_PROXY_URL = (typeof window !== 'undefined' && window.DUAN_PROXY_URL_OVERRIDE) || 'https://giangn.n-giang06022000.workers.dev';
 const DUAN_ADMIN_EMAILS = ['n.giang06022000@gmail.com', 'bichngocng1908@gmail.com'];
 
 const DUAN_DATA_FILE_NAME = 'data.js';        // dùng chung khoá IndexedDB với app.js

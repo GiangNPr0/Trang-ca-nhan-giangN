@@ -353,6 +353,19 @@ function setupDonateQrEffect() {
       };
   }
 
+  // Nơi lưu (Cloudflare Worker cũ / server.js) trả về THIẾU khoá `projects` → GIỮ LẠI Kho Dự án đang
+  // có trong bộ nhớ thay vì đặt null. Nếu đặt null thì lần ghi sau sẽ gửi `projects: null`
+  // (= "chưa tuỳ chỉnh" → 5 danh mục mặc định) và Kho Dự án của admin bị xoá khỏi bin/data.js.
+  function normalizeStoreKeepingProjects(record) {
+      const next = normalizeGalleryStore(record);
+      const hasKey = !!(record && typeof record === 'object' && !Array.isArray(record) &&
+          Object.prototype.hasOwnProperty.call(record, 'projects'));
+      if (!hasKey && next.projects === null && Array.isArray(galleryStore && galleryStore.projects)) {
+          next.projects = galleryStore.projects;
+      }
+      return next;
+  }
+
   // ==================== LƯU DỮ LIỆU: SERVER / JSONBIN.IO / FILE OFFLINE ====================
   // Thứ tự ưu tiên khi lưu lời nhắn & lượt yêu thích:
   //   1) server.js (mini PC trong nhà)  → ghi vào data.js trên máy chủ.
@@ -371,7 +384,7 @@ function setupDonateQrEffect() {
           body: JSON.stringify(galleryStore)
       });
       if (!res.ok) throw new Error('Server /api/data thất bại: ' + res.status);
-      galleryStore = normalizeGalleryStore(await res.json());
+      galleryStore = normalizeStoreKeepingProjects(await res.json());
       renderAll();
       showAutoSaveToast('✓ Đã lưu lên server', true);
   }
@@ -385,7 +398,7 @@ function setupDonateQrEffect() {
           const res = await fetch('/api/data', { cache: 'no-store' });
           if (!res.ok) return false;
           const data = await res.json();
-          galleryStore = normalizeGalleryStore(data);
+          galleryStore = normalizeStoreKeepingProjects(data);
           isServerMode = true;
           return true;
       } catch (err) {
@@ -447,7 +460,7 @@ function setupDonateQrEffect() {
   async function fetchFromJsonBin() {
       if (useProxy()) {
           const payload = await proxyRequest('/data', { cache: 'no-store' });
-          return normalizeGalleryStore(payload && payload.record ? payload.record : payload);
+          return normalizeStoreKeepingProjects(payload && payload.record ? payload.record : payload);
       }
       const res = await fetch(`${JSONBIN_BASE_URL}/${JSONBIN_BIN_ID}/latest`, {
           headers: { 'X-Master-Key': JSONBIN_MASTER_KEY },
@@ -455,7 +468,7 @@ function setupDonateQrEffect() {
       });
       if (!res.ok) throw new Error('JSONBin đọc thất bại: ' + res.status);
       const payload = await res.json();
-      return normalizeGalleryStore(payload && payload.record ? payload.record : payload);
+      return normalizeStoreKeepingProjects(payload && payload.record ? payload.record : payload);
   }
 
   // Ghi toàn bộ galleryStore lên jsonbin.io
@@ -478,7 +491,7 @@ function setupDonateQrEffect() {
           throw err;
       }
       const payload = await res.json();
-      galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
+      galleryStore = normalizeStoreKeepingProjects(payload && payload.record ? payload.record : galleryStore);
       renderAll();
       // Cảnh báo sớm khi dữ liệu tiến gần giới hạn 100KB của bin free
       if (sizeKB >= 85) {
@@ -497,7 +510,7 @@ function setupDonateQrEffect() {
       const body = JSON.stringify({ store: galleryStore });
       const sizeKB = Math.round(body.length / 1024);
       const payload = await proxyRequest('/admin', { method: 'POST', headers: proxyHeaders(true), body });
-      galleryStore = normalizeGalleryStore(payload && payload.record ? payload.record : galleryStore);
+      galleryStore = normalizeStoreKeepingProjects(payload && payload.record ? payload.record : galleryStore);
       renderAll();
       if (sizeKB >= 85) {
           showAutoSaveToast(`⚠ Dữ liệu gần đầy bin jsonbin (${sizeKB}KB/100KB) — nên xoá bớt lời nhắn cũ`, false);
@@ -514,7 +527,7 @@ function setupDonateQrEffect() {
           body: JSON.stringify({ message: item })
       });
       if (payload && payload.record) {
-          galleryStore = normalizeGalleryStore(payload.record);
+          galleryStore = normalizeStoreKeepingProjects(payload.record);
           renderAll();
       }
   }
@@ -527,7 +540,7 @@ function setupDonateQrEffect() {
           body: JSON.stringify({ deltas })
       });
       if (payload && payload.record) {
-          galleryStore = normalizeGalleryStore(payload.record);
+          galleryStore = normalizeStoreKeepingProjects(payload.record);
           renderAll();
       }
   }

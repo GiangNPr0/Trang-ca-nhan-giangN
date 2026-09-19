@@ -4,6 +4,15 @@ Thư mục này giữ **bản sao** file `worker.js` của Cloudflare Worker (pr
 Bản gốc để deploy: `H:\Other computers\máy ở c.ty\_giangN-backup\cloudflare-worker\worker.js`
 (kèm `HUONG-DAN.md` hướng dẫn deploy chi tiết). **Nhớ sửa cả 2 bản khi có thay đổi.**
 
+> ⚠️ **KIỂM TRA NGAY (19/09/2026): Worker đang chạy trên Cloudflare VẪN LÀ BẢN CŨ.**
+> Kết quả gọi thật `https://giangn.n-giang06022000.workers.dev/data` chỉ trả về
+> `messages, ratings, albums` — **thiếu `projects`**. Đây chính là lý do ảnh/video thêm ở trang
+> Dự án không đồng bộ được. Chạy script kiểm tra bất cứ lúc nào:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File cloudflare-worker\kiem-tra-worker.ps1
+> ```
+> (OK = đã deploy bản mới; CẢNH BÁO = còn bản cũ, xem mục "Cách deploy" bên dưới.)
+
 ## Vì sao cần deploy lại Worker mới? (lỗi "CHƯA LƯU — cloud đã nhận nhưng KHÔNG trả về khoá projects")
 
 Worker ghi dữ liệu qua hàm `normStore()` — hàm này là **danh sách trắng (whitelist)**: nó chỉ giữ
